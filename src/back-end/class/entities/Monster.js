@@ -31,6 +31,7 @@ var Monster = class extends Creature {
 
         ability_scores, // {} where KEY=Score Name, VALUE=Value
         proficiencies, // {} where KEY=Proficiency, VALUE=Level
+        resistances, // {} where KEY=Resistance Name, VALUE=Resis Obj
         features, // [] of feature names
 
         spellcasting_level,
@@ -55,6 +56,12 @@ var Monster = class extends Creature {
         this.reset_features()
         for (const name of features) {
             if (!this.has_feature(name)) this.add_feature(name)
+        }
+        
+        // Resistances
+        this.reset_resistances()
+        for (const [resistance, object] of Object.entries(resistances)) {
+            this.set_resistance(resistance, object)
         }
 
         // Spells
@@ -238,6 +245,14 @@ var Monster = class extends Creature {
 
         this.#resistances = resistances
         this.save()
+    }
+
+    reset_resistances () {
+        this.#resistances = {}
+    }
+
+    set_resistance(resistance, object) {
+        this.#resistances[resistance] = object
     }
 
     //=====================================================================================================
