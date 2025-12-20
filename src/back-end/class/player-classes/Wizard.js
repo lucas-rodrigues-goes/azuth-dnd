@@ -18,7 +18,8 @@ var Wizard = class extends PlayerClass {
             but at the cost of being very fragile. A wizard can learn spells as they come across scrolls 
             and spellbooks in their adventures, but can only memorize a portion of these every day.
             <br><br>
-            Wizards rely on their Intelligence score for their spells. And usually have no martial training.`
+            Wizards rely on their Intelligence score for their spells. They have few features but truly shine 
+            in the variety of their spellcasting. They usually have little to no martial training.`
     }
     static get healthPerLevel () { return 4 }
     static get spellcasting () {
