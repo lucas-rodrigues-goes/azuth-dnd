@@ -28,6 +28,7 @@
         speed: "30",
         ability_scores: { strength: 10, dexterity: 10, constitution: 10, intelligence: 10, wisdom: 10, charisma: 10 },
         features: [],
+        resistances: {},
         proficiencies: {"Weapon": 2},
 
         spellcasting_level: "",
@@ -444,6 +445,185 @@
                 events: {click: cancel}
             }
         ])
+    }
+
+    async function resistancesTab() {
+        try {
+        const tab = document.getElementById("resistances-tab")
+        let resistance = {
+            damage_type: "",
+            type: "",
+            reduction: 0,
+        }
+
+        // NEW: Add update function for damage_on_save_fail
+        const updateDamageOnSaveFail = {input: function (event) {
+            const damage = [];
+            const entries = this.value.split(",").map(s => s.trim());
+            for (const entry of entries) {
+                if (!entry) continue;
+                const parts = entry.split(" ");
+                if (parts.length < 2) continue;
+                const dice_block = parts[0];
+                const damage_type = parts.slice(1).join(" ");
+                let die_amount = "";
+                let die_size = "";
+                let damage_bonus = "";
+                const d_index = dice_block.indexOf("d");
+                if (d_index === -1) continue;
+                die_amount = dice_block.substring(0, d_index);
+                let after_d = dice_block.substring(d_index + 1);
+                let plus_index = after_d.indexOf("+");
+                let minus_index = after_d.indexOf("-");
+                if (plus_index !== -1) {
+                    die_size = after_d.substring(0, plus_index);
+                    damage_bonus = after_d.substring(plus_index + 1);
+                } else if (minus_index !== -1) {
+                    die_size = after_d.substring(0, minus_index);
+                    damage_bonus = "-" + after_d.substring(minus_index + 1);
+                } else {
+                    die_size = after_d;
+                }
+                const dmg_obj = { damage_type, die_amount, die_size };
+                if (damage_bonus !== "") dmg_obj.damage_bonus = damage_bonus;
+                damage.push(dmg_obj);
+            }
+            ability.damage_on_save_fail = damage;
+        }}
+        
+        const updateConditions = {input: function (event) {
+            const conditions = [];
+            const entries = this.value.split(",").map(s => s.trim());
+            for (const entry of entries) {
+                if (!entry) continue;
+                const parts = entry.split(":").map(s => s.trim());
+                if (parts.length !== 2) continue;
+                const name = parts[0];
+                const duration = parseInt(parts[1], 10);
+                if (isNaN(duration)) continue;
+                conditions.push({ name, duration });
+            }
+            ability.conditions = conditions;
+        }}
+        const updateSaveAttribute = {input: function (event) {
+            ability.save_attribute = this.value.toLowerCase()
+        }}
+
+        // Update Form
+        function updateForm() {
+            const get = id => document.getElementById(id);
+
+            get("resistance-damage-type").value = resistance.damage_type
+            get("resistance-damage-type").dispatchEvent(new Event("change"));
+            get("resistance-damage-type").dispatchEvent(new Event("input"));
+
+            get("resistance-type").value = resistance.type
+            get("resistance-type").dispatchEvent(new Event("change"));
+            get("resistance-type").dispatchEvent(new Event("input"));
+
+            get("resistance-reduction").value = resistance.reduction
+        }
+
+        // Update Resistances List
+        function updateResistancesElem() {
+            const elem = document.getElementById("resistances")
+            elem.clearChildren()
+
+            for (const name in monster.resistances) {
+                const current = monster.resistances[name]
+                current.name = name
+
+                function remove() {
+                    delete monster.resistances[name]
+                    updateResistancesElem()
+                }
+
+                function edit() {
+                    resistance = structuredClone(current)
+                    updateForm()
+                }
+
+                async function mousedown(event) {
+                    if (event.button === 0) {
+                        return
+                    } else if (event.button === 2) {
+                        context_menu({event, buttons: {"Edit": edit, "Remove": remove}})
+                    }
+                }
+
+                const image = ""
+
+                elem.appendChild({
+                    tag: "div",
+                    attributes: {class: "collapsible-div"},
+                    style: {display: "flex", gap: "1vh", padding: "0.5vh", marginTop: "1vh", opacity: 1},
+                    events: {mousedown},
+                    children: [
+                        {tag: "img", attributes: {src: image || ""}},
+                        {tag: "span", text: name},
+                        {tag: "span", style: {position: "absolute", right: "0.5vh"}, text: current.type},
+                    ]
+                })
+            }
+
+            // Hide Show block
+            if (elem.children.length > 0) elem.parentElement.classList.remove("hidden")
+            else elem.parentElement.classList.add("hidden")
+        }
+
+        const set = {click: function() {
+            if (!resistance.damage_type || !resistance.type || !resistance.reduction) {
+                return
+            }
+
+            // Trigger all input and change events for all form elements
+            document.querySelectorAll("#resistances-tab input, #resistances-tab select").forEach(element => {
+                element.dispatchEvent(new Event("input"));
+                element.dispatchEvent(new Event("change"));
+            });
+            
+            monster.resistances[resistance.damage_type] = structuredClone(resistance);
+            console.log(structuredClone(resistance));
+            updateResistancesElem();
+        }}
+
+        // Content
+        const containerOptions = {div: {attributes: {class: "hidden"}}, content: {style: {maxHeight: "80vh"}}}
+        tab.appendChildren([
+            {tag: "div", style: {position: "absolute", left: "0", width: "50%"}, children: [
+                container({title: "Action Details", children: [
+                    // Damage Type
+                    select({id: "resistance-damage-type", placeholder: "Damage", children: ["Lightning", "Acid", "Cold", "Fire", "Bludgeoning", "Piercing", "Slashing", "Force", "Psychic", "Radiant", "Thunder", "Necrotic", "Poison"].map(i => ({tag: "option", text: i})), options: {
+                        input: {attributes: {value: ""}, events: {input: function() {resistance.damage_type = this.value}}}
+                    }}),
+
+                    // Type
+                    select({id: "resistance-type", placeholder: "Type", children: ["Resistance", "Weakness", "Immunity", "Heals"].map(i => ({tag: "option", text: i})), options: {
+                        input: {attributes: {value: ""}, events: {input: function() {resistance.type = this.value}}}
+                    }}),
+
+                    // Reduction
+                    input({id: "resistance-reduction", placeholder: "Reduction", options: {
+                        input: {attributes: {value: ""}, events: {input: function() {resistance.reduction = this.value}}}
+                    }}),
+
+                    // Save Button
+                    {tag: "button", text: "Save", events: set, style: {marginTop: "2vh", width: "100%"}}
+                ]})
+            ]},
+            {tag: "div", style: {position: "absolute", right: 0, width: "50%"}, children: [
+                container({id: "resistances", scroll: true, title: "Resistances", options: containerOptions})
+            ]},
+            {tag: "button", text: "Submit", attributes: {class: "bottom right page-turner"}, 
+                events: {click: submit}
+            },
+            {tag: "button", text: "Cancel", attributes: {class: "bottom left page-turner"}, 
+                events: {click: cancel}
+            }
+        ])
+
+        updateResistancesElem()
+        } catch (error) {console.log(error)}
     }
 
     async function spellcastingTab () {
@@ -967,10 +1147,11 @@
     }
 
     async function loadPage() {
-        create_tabs({content: ["main", "spellcasting", "abilities"], parent: document.body})
+        create_tabs({content: ["main", "resistances", "spellcasting", "abilities"], parent: document.body})
         await loadMonster()
 
         await mainTab()
+        await resistancesTab()
         await spellcastingTab()
         await abilitiesTab()
 
