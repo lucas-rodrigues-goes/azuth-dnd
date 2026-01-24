@@ -16,6 +16,10 @@
         .container {
             margin-bottom: 4vh
         }
+
+        .hidden {
+            display: none
+        }
     </style>
     <script>
 
@@ -29,7 +33,7 @@
         ability_scores: { strength: 10, dexterity: 10, constitution: 10, intelligence: 10, wisdom: 10, charisma: 10 },
         features: [],
         resistances: {},
-        proficiencies: {"Weapon": 2},
+        proficiencies: {},
 
         spellcasting_level: "",
         spells: {
@@ -54,7 +58,7 @@
                 health_archetype: impersonated().health_archetype,
                 challenge_rating: impersonated().challenge_rating,
                 natural_armor_class: impersonated().natural_armor_class,
-                initiative_mod: impersonated().initiative_mod,
+                initiative_mod: impersonated().natural_initiative_mod,
                 speed: impersonated().base_speed,
                 ability_scores: impersonated().ability_scores,
                 features: impersonated().features,
@@ -62,6 +66,7 @@
                 spellcasting_level: impersonated().spellcasting_level,
                 spells: impersonated().spells,
                 abilities: impersonated().custom_abilities || {},
+                resistances: impersonated().natural_resistances || {}
             })
         } catch { "{}" }`))
         for (const key in impersonated) monster[key] = impersonated[key]
@@ -88,7 +93,6 @@
             impersonated().create(`+JSON.stringify(monster)+`)
         `)
         
-        //console.log(request)
         backend(request)
         openPage("character_sheet.html", "0")
     }
@@ -449,6 +453,7 @@
 
     async function resistancesTab() {
         try {
+        const damage_resistances_db = JSON.parse(await backend(`JSON.stringify(database.damage_types.data)`))
         const tab = document.getElementById("resistances-tab")
         let resistance = {
             damage_type: "",
@@ -539,7 +544,11 @@
                 }
 
                 function edit() {
-                    resistance = structuredClone(current)
+                    resistance = {
+                        ...current,
+                        damage_type: name,
+                        type: capitalize(current.type)
+                    }
                     updateForm()
                 }
 
@@ -551,7 +560,7 @@
                     }
                 }
 
-                const image = ""
+                const image = damage_resistances_db[name].image || ""
 
                 elem.appendChild({
                     tag: "div",
@@ -561,7 +570,7 @@
                     children: [
                         {tag: "img", attributes: {src: image || ""}},
                         {tag: "span", text: name},
-                        {tag: "span", style: {position: "absolute", right: "0.5vh"}, text: current.type},
+                        {tag: "span", style: {position: "absolute", right: "0.5vh"}, text: capitalize(current.type) + (current.type == "resistance" ? " ("+current.reduction+")" : "")},
                     ]
                 })
             }
@@ -572,7 +581,7 @@
         }
 
         const set = {click: function() {
-            if (!resistance.damage_type || !resistance.type || !resistance.reduction) {
+            if (!resistance.damage_type || !resistance.type || (!resistance.reduction && resistance.type == "Resistance")) {
                 return
             }
 
@@ -582,16 +591,27 @@
                 element.dispatchEvent(new Event("change"));
             });
             
-            monster.resistances[resistance.damage_type] = structuredClone(resistance);
-            console.log(structuredClone(resistance));
+            let newResistance = structuredClone(resistance)
+            newResistance.reduction = resistance.type == "Resistance" ? Number(resistance.reduction) || 0 : 0;
+            newResistance.type = resistance.type.toLowerCase()
+            delete newResistance.damage_type
+
+            monster.resistances[resistance.damage_type] = newResistance;
             updateResistancesElem();
+
+            // Clear form
+            document.querySelectorAll("#resistances-tab input, #resistances-tab select").forEach(element => {
+                element.value = "";
+                element.dispatchEvent(new Event("input"));
+                element.dispatchEvent(new Event("change"));
+            });
         }}
 
         // Content
         const containerOptions = {div: {attributes: {class: "hidden"}}, content: {style: {maxHeight: "80vh"}}}
         tab.appendChildren([
             {tag: "div", style: {position: "absolute", left: "0", width: "50%"}, children: [
-                container({title: "Action Details", children: [
+                container({title: "Resistance Details", children: [
                     // Damage Type
                     select({id: "resistance-damage-type", placeholder: "Damage", children: ["Lightning", "Acid", "Cold", "Fire", "Bludgeoning", "Piercing", "Slashing", "Force", "Psychic", "Radiant", "Thunder", "Necrotic", "Poison"].map(i => ({tag: "option", text: i})), options: {
                         input: {attributes: {value: ""}, events: {input: function() {resistance.damage_type = this.value}}}
@@ -599,12 +619,18 @@
 
                     // Type
                     select({id: "resistance-type", placeholder: "Type", children: ["Resistance", "Weakness", "Immunity", "Heals"].map(i => ({tag: "option", text: i})), options: {
-                        input: {attributes: {value: ""}, events: {input: function() {resistance.type = this.value}}}
+                        input: {attributes: {value: ""}, events: {input: function() {
+                            resistance.type = this.value
+                            const reductionInputElem = document.getElementById("resistance-reduction-div")
+                            if (resistance.type == "Resistance") reductionInputElem.classList.remove("hidden")
+                            else reductionInputElem.classList.add("hidden")
+                        }}}
                     }}),
 
                     // Reduction
                     input({id: "resistance-reduction", placeholder: "Reduction", options: {
-                        input: {attributes: {value: ""}, events: {input: function() {resistance.reduction = this.value}}}
+                        input: {attributes: {value: ""}, events: {input: function() {resistance.reduction = Number(this.value) || 0}}},
+                        div: {attributes: {class: "hidden"}}
                     }}),
 
                     // Save Button
@@ -1018,8 +1044,14 @@
             });
             
             monster.abilities[ability.name] = structuredClone(ability);
-            console.log(structuredClone(ability));
             updateAbilitiesElem();
+
+            // Clear form
+            document.querySelectorAll("#abilities-tab input, #abilities-tab select").forEach(element => {
+                element.value = "";
+                element.dispatchEvent(new Event("input"));
+                element.dispatchEvent(new Event("change"));
+            });
         }}
 
         // Content
