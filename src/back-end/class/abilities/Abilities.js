@@ -604,15 +604,39 @@ var Abilities = class {
                 : `.`
             )
 
-            // Small Sword Expertise
-            const weapon_properties = weapon?.properties || []
-            if (weapon_properties.includes("Small Sword") && creature.get_proficiency_level("Small Sword") >= 1 && hit_result.success) {
-                const consecutive_hits = creature.get_condition("Small Sword Expertise")?.consecutive_hits || 0
-                creature.set_condition("Small Sword Expertise", -1, {consecutive_hits: consecutive_hits + 1, target: target.id})
-            }
+            /* Proficiency Effects */; {
+                const weapon_properties = weapon?.properties || []
 
-            // Axe Expertise
-            //----- knock down on a failed DC 10 + strength
+                // Small Sword Expertise
+                if (weapon_properties.includes("Small Sword") && creature.get_proficiency_level("Small Sword") >= 1 && hit_result.success) {
+                    const consecutive_hits = creature.get_condition("Small Sword Expertise")?.consecutive_hits || 0
+                    creature.set_condition("Small Sword Expertise", -1, {consecutive_hits: consecutive_hits + 1, target: target.id})
+                }
+
+                // Axe Expertise
+                if (weapon_properties.includes("Axe") && creature.get_proficiency_level("Axe") >= 1 && hit_result.success) {
+                    target.set_condition("Breached", 1, {bonus_armor_class: -2})
+                }
+
+                // Blunt Weapon Expertise
+                if (weapon_properties.includes("Blunt") && creature.get_proficiency_level("Blunt Weapon") >= 1 && hit_result.success) {
+                    const save_result = this.saving_throw_result({ 
+                        target, 
+                        difficulty_class: 10 + creature.score_bonus.strength,
+                        save_bonus: target.saving_throws.strength
+                    })
+                    if (!save_result.success) {
+                        target.set_condition("Prone", -1)
+                        console.log(
+                            `${target.name_color} fails (${save_result.dice_roll.text_color}) to resist (DC ${save_result.difficulty_class}) the impact of ${creature.name_color}'s attack falling to the ground.`
+                        , "all")
+                    } else {
+                        console.log(
+                            `${target.name_color} successfully (${save_result.dice_roll.text_color}) resists (DC ${save_result.difficulty_class}) the impact of ${creature.name_color}'s attack.`
+                        , "all")
+                    }
+                }
+            }
 
             // Make stealth tests and others
             this.attack_roll_advantage_modifiers({creature, target})

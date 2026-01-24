@@ -32,13 +32,13 @@ These are proficiencies specific to weapon groups.
 
 ### Blunt Weapon
 - Proficiency: While wielding blunt weapons your attacks that would be blocked by metal armor, deal half damage instead
-- Expertise: Successful hits with blunt weapons reduce the target's armor class by 2 for 1 round. (WIP)
+- Expertise: Your attacks force opponents to make a Strength Saving throw with a difficulty of 10 + your strength modifier, being knocked prone on a fail.
 - Mastery: (No additional benefit)
 - Grandmastery: (No additional benefit)
 
 ### Axe
 - Proficiency: While wielding greataxes and battleaxes your attacks that would be blocked by leather or hide armor, deal half damage instead.
-- Expertise: Your attacks force opponents to make a Strength Saving throw with a difficulty of 10 + your strength modifier, being knocked prone on a fail. (WIP)
+- Expertise: Successful hits with axes breach the target's defenses reducing their armor class by 2 for 1 round.
 - Mastery: (No additional benefit)
 - Grandmastery: (No additional benefit)
 
