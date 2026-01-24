@@ -198,6 +198,10 @@ var Monster = class extends Creature {
     // Resistances
     //=====================================================================================================
 
+    get natural_resistances() {
+        return this.#resistances
+    }
+
     get resistances() {
         // Gather calculated resistances from Creature
         let resistances = super.resistances
@@ -258,6 +262,10 @@ var Monster = class extends Creature {
     //=====================================================================================================
     // Armor Class and Initiative
     //=====================================================================================================
+
+    get natural_initiative_mod() {
+        return this.#initiative_mod
+    }
 
     get initiative_mod() {
         let init_mod = super.initiative_mod + this.#initiative_mod
