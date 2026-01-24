@@ -604,6 +604,13 @@ var Abilities = class {
                 : `.`
             )
 
+            // Small Sword Expertise
+            const weapon_properties = weapon?.properties || []
+            if (weapon_properties.includes("Small Sword") && creature.get_proficiency_level("Small Sword") >= 1 && hit_result.success) {
+                const consecutive_hits = creature.get_condition("Small Sword Expertise")?.consecutive_hits || 0
+                creature.set_condition("Small Sword Expertise", -1, {consecutive_hits: consecutive_hits + 1, target: target.id})
+            }
+
             // Axe Expertise
             //----- knock down on a failed DC 10 + strength
 
@@ -1132,6 +1139,16 @@ var Abilities = class {
                 const targetHasLightArmor = ["None", "Light"].includes(target.armor_type)
                 if (weapon_properties.includes("Small Sword") && creature.get_proficiency_level("Small Sword") >= 0 && targetHasLightArmor) {
                     output += creature.score_bonus.dexterity
+                }
+
+                // Small Sword Expertise
+                if (creature.has_condition("Small Sword Expertise")) {
+                    const condition = creature.get_condition("Small Sword Expertise")
+                    if (!weapon_properties.includes("Small Sword") || condition.target != target.id) {
+                        creature.remove_condition("Small Sword Expertise")
+                    } else {
+                        output += condition.consecutive_hits
+                    }
                 }
 
             }

@@ -20,7 +20,7 @@ These are proficiencies specific to weapon groups.
 
 ### Small Sword
 - Proficiency: While wielding small swords you can add your dexterity modifier as an additional bonus to damage against unnarmored enemies.
-- Expertise: Consecutive hits against the same target grant you a cummulative +1 bonus to damage, this effect is lost when attacking a different target. (WIP)
+- Expertise: Consecutive hits against the same target grant you a cummulative +1 bonus to damage, this effect is lost when you hit a different target.
 - Mastery: (No additional benefit)
 - Grandmastery: (No additional benefit)
 

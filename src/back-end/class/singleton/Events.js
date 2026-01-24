@@ -413,12 +413,14 @@ var Events = class {
                 const number = {
                     Exhaustion: creature.exhaustion,
                     Stoneskin: condition.charges,
+                    "Small Sword Expertise": condition.consecutive_hits
                 }[name] || DEFAULT_NUMBER
 
                 const DEFAULT_DESCRIPTION = number == -1 ? name : `${name} (${number} rounds)`
                 const description = {
                     Exhaustion: `${name} (Level ${number})`,
                     Stoneskin: `${name} (${number} charges)`,
+                    "Small Sword Expertise": `${name} (+${number} damage)`,
                 }[name] || DEFAULT_DESCRIPTION
 
                 conditions.push({image, number, description})
