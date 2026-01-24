@@ -739,7 +739,7 @@ var Abilities = class {
             else if (hasPactOfTheBlade) damage_attribute_bonus = Math.max(cha_bonus, damage_attribute_bonus);
             
             // Other damage modifiers
-            const damage_modifiers = this.weapon_attack_damage_modifiers({creature, target})
+            const damage_modifiers = this.weapon_attack_damage_modifiers({weapon, creature, target})
 
             // Damage
             const crit_multiplier = hit_result == "lands a critical hit" ? 2 : 1;
@@ -1109,9 +1109,10 @@ var Abilities = class {
         } catch (error) {console.error("attack_roll_advantage_modifiers()", error)}
     }
 
-    static weapon_attack_damage_modifiers({creature=impersonated(), target=selected()}) {
+    static weapon_attack_damage_modifiers({weapon, creature=impersonated(), target=selected()}) {
         try {
             let output = 0; {
+                const weapon_properties = weapon?.properties || []
 
                 // Rage
                 if (creature.has_condition("Rage")) {
@@ -1119,6 +1120,12 @@ var Abilities = class {
                     const barbarian_level = creature.classes?.Barbarian?.level || 0
                     if (barbarian_level >= 9) output += 1
                     if (barbarian_level >= 16) output += 1
+                }
+
+                // Small Sword Proficiency
+                const targetHasLightArmor = ["None", "Light"].includes(target.armor_type)
+                if (weapon_properties.includes("Small Sword") && creature.get_proficiency_level("Small Sword") >= 0 && targetHasLightArmor) {
+                    output += creature.score_bonus.dexterity
                 }
 
             }
