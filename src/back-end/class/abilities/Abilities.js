@@ -1110,6 +1110,7 @@ var Abilities = class {
     }
 
     static weapon_attack_damage_modifiers({weapon, creature=impersonated(), target=selected()}) {
+        // Damage modifiers that are applied directly to the main weapon damage.
         try {
             let output = 0; {
                 const weapon_properties = weapon?.properties || []
@@ -1120,6 +1121,11 @@ var Abilities = class {
                     const barbarian_level = creature.classes?.Barbarian?.level || 0
                     if (barbarian_level >= 9) output += 1
                     if (barbarian_level >= 16) output += 1
+                }
+
+                // Favored Enemy
+                if (creature.has_feature(`Favored Enemy: ${target.type}`)) {
+                    output += creature.score_bonus.wisdom
                 }
 
                 // Small Sword Proficiency
@@ -1134,15 +1140,10 @@ var Abilities = class {
     }
 
     static weapon_attack_damage_bonuses({creature=impersonated(), target=selected(), weapon}) {
+        // Damage modifiers that add a separate damage type or roll additional dice
         try {
             const output = []; {
                 const default_damage = weapon?.damage?.[0]?.damage_type || "Force"
-
-                // Favored Enemy
-                const feature_name = `Favored Enemy: ${target.type}`
-                if (creature.has_feature(feature_name)) {
-                    output.push({die_amount: 0, die_size: 0, damage_type: default_damage, damage_bonus: creature.score_bonus.wisdom})
-                }
 
                 // Hunter's Mark
                 if (target.has_condition("Hunter's Mark")) {
