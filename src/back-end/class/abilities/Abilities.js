@@ -306,14 +306,14 @@ var Abilities = class {
                 success: false,
                 message: `${creature.name_color} needs to select a target for this spell.`
             }
-            
+
             // Validate Visibility
             const target_visibility = creature.target_visibility()
             if (target_visibility == 0) return {
                 success: false,
                 message: `${creature.name_color} needs to see their target.`
             }
-            
+
             // Validate Range
             const range_validation = this.validate_spell_range({creature, target, range, melee_disadvantage})
             if (range_validation.outOfRange) {
@@ -338,7 +338,7 @@ var Abilities = class {
 
             // Metamagic Empowered Spell
             if (creature.has_condition("Metamagic: Empowered Spell")) creature.remove_condition("Metamagic: Empowered Spell")
-
+2                    
             // Make stealth tests and others
             this.attack_roll_advantage_modifiers({creature, target})
 
@@ -1032,6 +1032,11 @@ var Abilities = class {
                 )
             ) hit_bonus += 2
 
+            // Heavy Striking
+            if (creature.has_condition("Heavy Striking")) {
+                hit_bonus -= creature?.get_condition("Heavy Striking")?.hit_penalty || 0
+            }
+
             // Proficiency
             const canApplyProfBonus = (
                 creature.constructor.name == "Monster" ||
@@ -1173,6 +1178,12 @@ var Abilities = class {
                     } else {
                         output += condition.consecutive_hits
                     }
+                }
+
+                // Heavy Striking
+                if (creature.has_condition("Heavy Striking")) {
+                    const condition = creature.get_condition("Heavy Striking")
+                    output += condition.damage_bonus
                 }
 
             }

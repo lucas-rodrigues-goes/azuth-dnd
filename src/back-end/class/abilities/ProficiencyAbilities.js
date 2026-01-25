@@ -22,6 +22,17 @@ var ProficiencyAbilities = class extends Abilities {
             }
             if (creature.get_proficiency_level("Cleaving") >= 1) abilities_list["cleave"].description =
                 `At the cost of precision, you can attack 2 adjacent targets at a penalty of -3, or 3 targets at a -5 penalty.`
+
+            // Heavy Striking
+            if (creature.get_proficiency_level("Heavy Striking") >= 0) abilities_list["heavy_striking"] = {
+                resources: [],
+                description: `While wielding a two-handed melee weapon, you can choose to fully commit to each blow, sacrificing precision for sheer force. You can enable this feature to receive a penalty of -2 to hit on your attacks, but deal an additional 4 damage on hit.`,
+                image: "asset://f3cbb9f9b0e4d850c3a4911904b714a7",
+                type: "Attack",
+                origin: origin,
+            }
+            if (creature.get_proficiency_level("Heavy Striking") >= 1) abilities_list["heavy_striking"].description =
+                `While wielding a two-handed melee weapon, you can choose to fully commit to each blow, sacrificing precision for sheer force. You can enable this feature to receive a penalty of -2 or -5 to hit on your attacks, but deal an additional 4 or 10 damage on hit respectively.`
         }
 
         return abilities_list
@@ -100,7 +111,29 @@ var ProficiencyAbilities = class extends Abilities {
         Initiative.set_recovery(action_details.recovery, creature)
     }
 
-    static heavy_striking () {}
+    static heavy_striking () {
+        const action_name = "heavy_striking"
+        const creature = impersonated()
+
+        if (creature.has_condition("Heavy Striking")) {
+            creature.remove_condition("Heavy Striking")
+        } else {
+            let bonus_level = 0
+            if (creature.get_proficiency_level("Heavy Striking") >= 1) {
+                bonus_level = input({bonus_level: {
+                    label: "Damage Type",
+                    value: `-2 Hit / +4 Damage,-5 Hit / +10 Damage`,
+                    type: "radio",
+                    options: {}
+                }}).bonus_level
+            }
+
+            creature.set_condition("Heavy Striking", -1, {
+                damage_bonus: bonus_level ? 10 : 4,
+                hit_penalty: bonus_level ? 5 : 2,
+            })
+        }
+    }
 
     static focused_shooter () {}
 
