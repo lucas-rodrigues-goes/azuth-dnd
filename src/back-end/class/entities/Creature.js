@@ -1039,6 +1039,11 @@ var Creature = class extends Entity {
                 Poison: {type: "resistance", reduction: 10}
             })
 
+            // Hellish Resistance
+            if (this.has_feature("Hellish Resistance")) applyResistancesOfObject({
+                Fire: {type: "resistance", reduction: 10}
+            })
+
             // Heavy Armor Expertise
             if (this.get_proficiency_level("Heavy Armor") >= 2 && this.armor_type == "Heavy") applyResistancesOfObject({
                 Slashing: {type: "resistance", reduction: 3},
