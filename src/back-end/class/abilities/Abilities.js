@@ -1217,6 +1217,11 @@ var Abilities = class {
                     output.push({die_amount: condition.die_amount || 1, die_size: 4, damage_type: condition.damage_type, damage_bonus: 0})
                 }
 
+                // Invocation: Lifedrinker
+                if (creature.has_feature("Invocation: Lifedrinker")) {
+                    output.push({die_amount: 0, die_size: 0, damage_type: "Necrotic", damage_bonus: Math.max(creature.score_bonus.charisma, 1)})
+                }
+
             }
             return output
         } catch (error) {console.error("weapon_attack_damage_bonuses()", error)}
