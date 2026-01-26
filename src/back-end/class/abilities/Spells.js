@@ -1825,6 +1825,59 @@ var Spells = class extends Abilities {
         }
     }
 
+    static dispel_magic (options = {}) {
+        const original_spell = {...database.spells.data["Dispel Magic"]}
+        const spell = {...original_spell, ...options}
+        const creature = impersonated()
+        const target = selected()
+        const {spellcasting_modifier = 0} = spell
+
+        let min_level = 3; {
+            const levels = [7, 9, 11] 
+            if (creature.spellcasting_level >= levels[0]) min_level += 1
+            if (creature.spellcasting_level >= levels[1]) min_level += 1
+            if (creature.spellcasting_level >= levels[2]) min_level += 1
+        }
+
+        console.log(`${creature.name_color} cast dispel magic on ${target.name_color}.`, "all")
+        let found_spell_on_target = false
+        for (const name in target.conditions) {
+            const condition = database.conditions.data[name] || {}
+            if (!condition.type == "Spell") continue
+            
+            const spell = database.spells.data[name]
+            if (!spell) continue
+            found_spell_on_target = true
+
+            const spell_level = spell.level == "cantrip" ? 0 : Number(spell.level[0])
+            if (spell_level <= min_level) {
+                target.remove_condition(name)
+                console.log(
+                    `${creature.name_color} dispelled ${name} on ${target.name_color}.`
+                , "all")
+            }
+            else {
+                const total_roll = roll_20()
+                const difficulty_check = total_roll.result + spellcasting_modifier
+                const difficulty_class = 10 + spell_level
+                if (difficulty_check >= difficulty_class) {
+                    target.remove_condition(name)
+                    console.log(
+                        `${creature.name_color} dispelled (${total_roll.text_color} + ${spellcasting_modifier}) ${name} (DC ${difficulty_class}) on ${target.name_color}.`
+                    , "all")
+                }
+                else {
+                    console.log(
+                        `${creature.name_color} failed to dispell (${total_roll.text_color} + ${spellcasting_modifier}) ${name} (DC ${difficulty_class}) on ${target.name_color}.`
+                    , "all")
+                }
+            }
+        }
+
+        if (!found_spell_on_target) return {success: false, message: `${creature.name_color} failed to find any spells on target`}
+        else return {success: true}
+    }
+
     //---------------------------------------------------------------------------------------------------
     // 4th Level Spells
     //---------------------------------------------------------------------------------------------------
@@ -2016,6 +2069,61 @@ var Spells = class extends Abilities {
         if (success) Spells.concentrate(creature, spell, targets)
 
         return save_return
+    }
+
+    static mass_dispel_magic (options = {}) {
+        const original_spell = {...database.spells.data["Mass Dispel Magic"]}
+        const spell = {...original_spell, ...options}
+        const creature = impersonated()
+        const targets = allSelected()
+        const {spellcasting_modifier = 0} = spell
+
+        let min_level = 3; {
+            const levels = [11, 13, 15] 
+            if (creature.spellcasting_level >= levels[0]) min_level += 1
+            if (creature.spellcasting_level >= levels[1]) min_level += 1
+            if (creature.spellcasting_level >= levels[2]) min_level += 1
+        }
+
+        for (const target of targets) {
+            console.log(`${creature.name_color} cast dispel magic on ${target.name_color}.`, "all")
+            let found_spell_on_target = false
+            for (const name in target.conditions) {
+                const condition = database.conditions.data[name] || {}
+                if (!condition.type == "Spell") continue
+
+                const spell = database.spells.data[name]
+                if (!spell) continue
+                found_spell_on_target = true
+
+                const spell_level = spell.level == "cantrip" ? 0 : Number(spell.level[0])
+                if (spell_level <= min_level) {
+                    target.remove_condition(name)
+                    console.log(
+                        `${creature.name_color} dispelled ${name} on ${target.name_color}.`
+                    , "all")
+                }
+                else {
+                    const total_roll = roll_20()
+                    const difficulty_check = total_roll.result + spellcasting_modifier
+                    const difficulty_class = 10 + spell_level
+                    if (difficulty_check >= difficulty_class) {
+                        target.remove_condition(name)
+                        console.log(
+                            `${creature.name_color} dispelled (${total_roll.text_color} + ${spellcasting_modifier}) ${name} (DC ${difficulty_class}) on ${target.name_color}.`
+                        , "all")
+                    }
+                    else {
+                        console.log(
+                            `${creature.name_color} failed to dispell (${total_roll.text_color} + ${spellcasting_modifier}) ${name} (DC ${difficulty_class}) on ${target.name_color}.`
+                        , "all")
+                    }
+                }
+            }
+            if(!found_spell_on_target) console.log(`${creature.name_color} failed to find any spells on target`, "all")
+        }
+
+        return {success: true}
     }
 
     //---------------------------------------------------------------------------------------------------

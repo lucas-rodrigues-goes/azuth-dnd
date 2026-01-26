@@ -34,7 +34,6 @@ The following spells are planned to be implemented.
 ### 3rd Level
 - Call Lightning
 - Counterspell
-- Dispel Magic
 - Melf's Minute Meteors
 - Revivify
 - Fear
