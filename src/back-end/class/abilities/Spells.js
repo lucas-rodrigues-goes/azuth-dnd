@@ -1878,6 +1878,59 @@ var Spells = class extends Abilities {
         else return {success: true}
     }
 
+    static counterspell (options = {}) {
+        const original_spell = {...database.spells.data["Counterspell"]}
+        const spell = {...original_spell, ...options}
+        const creature = impersonated()
+        const target = selected()
+        const {spellcasting_modifier = 0} = spell
+
+        let min_level = 3; {
+            const levels = [7, 9, 11] 
+            if (creature.spellcasting_level >= levels[0]) min_level += 1
+            if (creature.spellcasting_level >= levels[1]) min_level += 1
+            if (creature.spellcasting_level >= levels[2]) min_level += 1
+        }
+
+        if (!target.has_condition("Spellcasting")) return {
+            success: false,
+            message: `The target for this spell must be spellcasting.`
+        }
+
+        const condition = target.get_condition("Spellcasting")
+        if (condition.isMonsterAbility) return {
+            success: false,
+            message: `The target is using a monster ability, not a spell.`
+        }
+
+        const name = condition.spell.name
+        const spell_level = condition.spell.level == "cantrip" ? 0 : Number(condition.spell.level[0])
+        if (spell_level <= min_level) {
+            target.remove_condition("Spellcasting")
+            console.log(
+                `${creature.name_color} counterspelled ${target.name_color}'s ${name}.`
+            , "all")
+        }
+        else {
+            const total_roll = roll_20()
+            const difficulty_check = total_roll.result + spellcasting_modifier
+            const difficulty_class = 10 + spell_level
+            if (difficulty_check >= difficulty_class) {
+                target.remove_condition("Spellcasting")
+                console.log(
+                    `${creature.name_color} counterspelled (${total_roll.text_color} + ${spellcasting_modifier}) ${target.name_color}'s ${name} (DC ${difficulty_class}).`
+                , "all")
+            }
+            else {
+                console.log(
+                    `${creature.name_color} failed to counterspell (${total_roll.text_color} + ${spellcasting_modifier}) ${target.name_color}'s ${name} (DC ${difficulty_class}) .`
+                , "all")
+            }
+        }
+
+        return {success: true}
+    }
+
     //---------------------------------------------------------------------------------------------------
     // 4th Level Spells
     //---------------------------------------------------------------------------------------------------

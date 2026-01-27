@@ -1723,6 +1723,9 @@ var Creature = class extends Entity {
                 duration: duration,
             };
 
+            // If condition is dying, set HP to 0
+            if (condition == "Dying") this.health = 0
+
             // Log
             const msg = duration === -1
                 ? `${this.#name} received the ${condition} condition.`
