@@ -1404,6 +1404,41 @@ var Spells = class extends Abilities {
         return {success: true}
     }
 
+    static magnify_gravity (options = {}) {
+        const original_spell = {...database.spells.data["Magnify Gravity"]}
+        const spell = {...original_spell, ...options}
+        const creature = impersonated()
+        const saving_throw_score = "Constitution"
+
+        let die_amount = 2; {
+            const levels = [3, 5, 7] 
+            if (creature.spellcasting_level >= levels[0]) die_amount += 1
+            if (creature.spellcasting_level >= levels[1]) die_amount += 1
+            if (creature.spellcasting_level >= levels[2]) die_amount += 1
+        }
+
+        // Saving throws
+        const save_return = Spells.make_spell_save({
+            ...spell,
+            targets: allSelected(),
+            half_on_fail: true,
+            damage_dice: [
+                {die_amount, die_size: 6, damage_type: "Force"}
+            ],
+            saving_throw_score: saving_throw_score
+        })
+        if (!save_return.success) return save_return
+
+        // Apply effect
+        for (const element of save_return.targets) {
+            if (!element.save_result.success) {
+                element.target.set_condition(spell.name, spell.duration)
+            }
+        }
+
+        return save_return
+    }
+
     //---------------------------------------------------------------------------------------------------
     // 2nd Level Spells
     //---------------------------------------------------------------------------------------------------

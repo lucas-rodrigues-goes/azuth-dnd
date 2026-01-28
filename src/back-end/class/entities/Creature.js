@@ -1214,6 +1214,7 @@ var Creature = class extends Entity {
                 "Longstrider": {type: "add", value: 10},
                 "Haste": { type: "multiply", value: 2 },
                 "Slow": { type: "multiply", value: 0.5 },
+                "Magnify Gravity": { type: "multiply", value: 0.5 },
                 "Ray of Frost": {type: "multiply", value: 0.5},
                 "Paralyzed": {type: "multiply", value: 0},
                 "Unconscious": {type: "multiply", value: 0},

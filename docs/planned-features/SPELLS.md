@@ -9,14 +9,14 @@ The following spells are planned to be implemented.
 - Spare the Dying
 
 ### 1st Level
-- Armor of Agathys
+- Larloch's Minor Drain (1d4-4d4 Necrotic, heals same amount)
+- Armor of Agathys (0/3/6/9 physical resistance, 10-40 cold resistance, 10 rounds, 1d6-4d6 cold damage to melee attacker)
 - Cause Fear
-- Chromatic Orb
-- Sleep
+- Chromatic Orb (3d8 Thunder, 4d8 Fire, 2d8 Acid (blinds), 1d8 Cold (paralyzes))
+- Sleep (10ft radius, DC WIS)
 - Thunderwave
 - Command
 - Entangle
-- Magnify Gravity
 - Shield of Faith
 - Zephyr Strike
 
