@@ -796,14 +796,14 @@ var FeatureAbilities = class extends Abilities {
         if (!target) {
             input({
                 "none": {
-                    label: "Are you sure you want to end your bond with your current companion?",
+                    value: "Are you sure you want to end your bond with your current companion?",
                     type: "label",
                     options: {
                         span: true
                     }
                 }
             })
-            const previous_target = this.remove_previous(creature, name); 
+            const previous_target = this.remove_previous(creature, name);
             return {
                 success: false, 
                 message: (previous_target
@@ -863,6 +863,7 @@ var FeatureAbilities = class extends Abilities {
         // Change name
         const newName = input({
             "name": {
+                value: target.name,
                 label: "Choose a name",
                 type: "text",
                 options: {

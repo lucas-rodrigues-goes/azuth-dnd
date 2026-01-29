@@ -520,6 +520,7 @@ var Abilities = class {
                 // Remove conditions
                 creature.remove_condition(`Maintaining: ${name}`)
                 if (previous_target) previous_target.remove_condition(name)
+                previous_target.health += 0
 
                 return previous_target
             }
