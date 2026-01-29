@@ -365,7 +365,7 @@ var Creature = class extends Entity {
                 const {difficulty_class, score} = condition.saving_throw
 
                 // Save roll
-                const save_bonus = this.score_bonus[score.toLowerCase()] + this.roll_bonus()
+                const save_bonus = this.saving_throws[score.toLowerCase()] + this.roll_bonus()
                 const roll_result = roll_20(0)
                 const roll_to_save = roll_result.result + save_bonus
 
@@ -1663,6 +1663,15 @@ var Creature = class extends Entity {
         // Apply Proficiency Bonus
         for (const skill in skills) {
             skills[skill] += (Number(this.get_proficiency_level(skill)) + 1) * 2
+        }
+
+        skills = {...skills,
+            "Strength": this.score_bonus.strength,
+            "Dexterity": this.score_bonus.dexterity,
+            "Constitution": this.score_bonus.constitution,
+            "Wisdom": this.score_bonus.wisdom,
+            "Intelligence": this.score_bonus.intelligence,
+            "Charisma": this.score_bonus.charisma
         }
         
         return skills
