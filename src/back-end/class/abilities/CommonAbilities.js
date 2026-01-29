@@ -614,9 +614,16 @@ var CommonAbilities = class extends Abilities {
 
         // Push
         if (success) {
-            const direction = calculate_direction(creature, target)
             const cells = 1
-            target.move(direction, cells)
+            creature.face_target(target)
+            if (settings.gridMovement) {
+                const direction = calculate_direction(creature, target)
+                target.move(direction, cells)
+            }
+            else {
+                const angle = calculate_direction_angle(creature, target)
+                target.move_angle(angle, cells)
+            }
         }
 
         // Consume resources

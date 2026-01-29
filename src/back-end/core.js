@@ -383,6 +383,23 @@ var calculate_direction = function(source, target) {
     return "none"; // fallback
 }
 
+var calculate_direction_angle = function (source, target) {
+    const delta_x = target.x - source.x;
+    const delta_y = source.y - target.y; // keep Y inverted if screen coords
+
+    if (delta_x === 0 && delta_y === 0) {
+        return null; // or 0, or whatever makes sense for you
+    }
+
+    // atan2 gives angle where 0 = right
+    let angle = Math.atan2(delta_y, delta_x) * (180 / Math.PI);
+
+    angle = (angle + 360) % 360;
+
+    return Math.round(angle);
+};
+
+
 var teleport = function (map_name=undefined) {
     try {
 

@@ -198,6 +198,24 @@ var Entity = class {
         }
     }
 
+    move_angle(angle, units) {
+        if (isNaN(units) || isNaN(angle)) return
+
+        // Convert grid units to pixels
+        units = Number(units * settings.cellSize)
+
+        // Convert degrees → radians
+        const rad = angle * (Math.PI / 180)
+
+        // Calculate deltas
+        const dx = Math.cos(rad) * units
+        const dy = -Math.sin(rad) * units // minus because screen Y grows downward
+
+        // Apply movement
+        this.x += dx
+        this.y += dy
+    }
+
     // Rotate to face another entity
     face_target(target=selected()) {
         this.facing = calculate_direction(this, target)
