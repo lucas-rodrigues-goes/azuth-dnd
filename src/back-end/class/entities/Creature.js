@@ -78,8 +78,12 @@ var Creature = class extends Entity {
     }
 
     get name_color () {
-        const color = this.player ? "#48BAFF" : "#C82E42"
-
+        const color = this.player ? "#48baff" : {
+            friendly: "#5ab350",
+            neutral: "#b8a44d",
+            hostile: "#b44",
+        }[this.attitude]
+            
         return `<span style="color: ${color}">${this.name}</span>`
     }
 
@@ -243,15 +247,16 @@ var Creature = class extends Entity {
                     break
                 }
                 case "Hidden": {
-                    if (this.has_condition("Invisible")) continue
+                    if (this.has_condition("Invisible")) break
                     this.invisible = this.player ? false : hasCondition
                     this.opacity = hasCondition ? 0.5 : 1
-                    continue
+                    break
                 }
                 case "Invisible": {
+                    if (this.has_condition("Hidden")) break
                     this.invisible = this.player ? false : hasCondition
                     this.opacity = hasCondition ? 0.2 : 1
-                    continue
+                    break
                 }
                 case "Unconscious": {
                     MTScript.evalMacro(`[r: setHasSight(${hasCondition ? 0 : 1}, "${this.id}")]`)
@@ -290,7 +295,6 @@ var Creature = class extends Entity {
 
         // Set grid type
         macro(`setTokenSnapToGrid(${settings.gridMovement}, "${this.id}")`)
-
         } catch (error) { console.log(error) }
     }
 
