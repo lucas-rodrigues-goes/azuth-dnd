@@ -56,6 +56,21 @@ var Entity = class {
         if (!["Fine", "Diminutive", "Tiny", "Small", "Medium", "Large", "Huge", "Gargantuan", "Colossal"].includes(size)) return
         MTScript.evalMacro(`[r:setSize("${size}", "${this.id}")]`)
     }
+    get size_value() {
+        const SIZE_VALUE = {
+            Fine: 0,
+            Diminutive: 1,
+            Tiny: 2,
+            Small: 3,
+            Medium: 4,
+            Large: 5,
+            Huge: 6,
+            Gargantuan: 7,
+            Colossal: 8
+        }
+
+        return SIZE_VALUE[this.size] ?? null
+    }
 
     // Position X
     get x() {

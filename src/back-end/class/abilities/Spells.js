@@ -345,6 +345,58 @@ var Spells = class extends Abilities {
     // Cantrips
     //---------------------------------------------------------------------------------------------------
 
+    static thorn_whip(options = {}) {
+        const original_spell = {...database.spells.data["Thorn Whip"]}
+        const spell = {...original_spell, ...options}
+        const creature = impersonated()
+        const target = selected()
+
+        let die_amount = 1; {
+            const levels = [5, 11, 17] 
+            if (creature.spellcasting_level >= levels[0]) die_amount += 1
+            if (creature.spellcasting_level >= levels[1]) die_amount += 1
+            if (creature.spellcasting_level >= levels[2]) die_amount += 1
+        }
+
+        // Spell Attack
+        Sound.play("swing")
+        const attack_return = Spells.make_spell_attack({
+            ...spell,
+            target: target,
+            melee_disadvantage: false,
+            damage_dice: [{die_amount: die_amount, die_size: 4, damage_type: "Piercing", damage_bonus: spell.spellcasting_modifier}],
+        })
+
+        // Pull Target
+        if (attack_return?.hit_result?.message?.includes("hit")) {
+            Sound.play("piercing")
+            if (target.size_value >= 6) return attack_return
+
+            const distance = calculate_distance(creature, target)
+            const desired_cells = 2
+            const min_distance = 1 // don't overlap the creature
+
+            // How far we are allowed to pull
+            const pull_cells = Math.max(
+                0,
+                Math.min(desired_cells, distance - min_distance)
+            )
+            if (pull_cells === 0) return attack_return
+
+            creature.face_target(target)
+
+            if (settings.gridMovement) {
+                const direction = calculate_direction(target, creature)
+                target.move(direction, pull_cells)
+            } else {
+                const angle = calculate_direction_angle(target, creature)
+                target.move_angle(angle, pull_cells)
+            }
+        }
+
+        return attack_return
+    }
+
     static thunderclap (options = {}) {
         const original_spell = {...database.spells.data["Thunderclap"]}
         const spell = {...original_spell, ...options}
