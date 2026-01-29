@@ -246,16 +246,17 @@ var Creature = class extends Entity {
                     updateBars(hasCondition)
                     break
                 }
-                case "Hidden": {
-                    if (this.has_condition("Invisible")) break
-                    this.invisible = this.player ? false : hasCondition
-                    this.opacity = hasCondition ? 0.5 : 1
-                    break
-                }
+                case "Hidden":
+                    // Falls through
                 case "Invisible": {
-                    if (this.has_condition("Hidden")) break
-                    this.invisible = this.player ? false : hasCondition
-                    this.opacity = hasCondition ? 0.2 : 1
+                    const invis = this.has_condition("Invisible")
+                    const hidden = this.has_condition("Hidden")
+                    this.invisible = this.player ? false : (invis || hidden)
+
+                    if (invis) this.opacity = 0.2
+                    else if (hidden) this.opacity = 0.5
+                    else this.opacity = 1
+
                     break
                 }
                 case "Unconscious": {
