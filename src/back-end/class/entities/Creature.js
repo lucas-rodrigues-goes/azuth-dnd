@@ -829,6 +829,7 @@ var Creature = class extends Entity {
                 case "heals":
                     this.receive_healing(value)
                     return 0
+                case "weakness":
                 case "vulnerability":
                     damage = value * 2
                     break

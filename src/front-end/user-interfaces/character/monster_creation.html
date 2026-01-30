@@ -618,7 +618,7 @@
                     }}),
 
                     // Type
-                    select({id: "resistance-type", placeholder: "Type", children: ["Resistance", "Weakness", "Immunity", "Heals"].map(i => ({tag: "option", text: i})), options: {
+                    select({id: "resistance-type", placeholder: "Type", children: ["Resistance", "Vulnerability", "Immunity", "Heals"].map(i => ({tag: "option", text: i})), options: {
                         input: {attributes: {value: ""}, events: {input: function() {
                             resistance.type = this.value
                             const reductionInputElem = document.getElementById("resistance-reduction-div")
