@@ -1758,6 +1758,11 @@ var Creature = class extends Entity {
 
         // Special cases
         switch (condition) {
+            case "Animate Dead": {
+                this.owners = []
+                this.attitude = "hostile"
+                break
+            }
             case "Concentration": {
                 const concentration = this.get_condition("Concentration");
                 if (concentration?.targets && concentration?.condition) {
@@ -1973,8 +1978,16 @@ var Creature = class extends Entity {
         return this.#inventory
     }
 
+    set inventory (inventory) {
+        this.#inventory = inventory
+    }
+
     get equipment() {
         return this.#equipment
+    }
+
+    set equipment(equipment) {
+        this.#equipment = equipment
     }
 
     switch_weapon_sets() {

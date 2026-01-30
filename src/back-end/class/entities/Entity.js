@@ -20,6 +20,9 @@ var Entity = class {
     get id() { return this.#id }
     get token() { return this.#token;}
     get owners() {return MTScript.evalMacro(`[r:getOwners(",", "${this.id}")]`).split(",")}
+    set owners(owners) {
+        MTScript.evalMacro(`[r:setOwner('${JSON.stringify(owners)}', "${this.id}")]`)
+    }
 
     // Images
     get portrait() { return MTScript.evalMacro(`[r:getTokenPortrait("","${this.id}")]`)}
@@ -136,6 +139,10 @@ var Entity = class {
     //=====================================================================================================
     // Functions
     //=====================================================================================================
+
+    delete() {
+        MTScript.evalMacro(`[r: removeToken("${this.id}") ]`)
+    }
 
     // State management
     set_state(state, value=true) {

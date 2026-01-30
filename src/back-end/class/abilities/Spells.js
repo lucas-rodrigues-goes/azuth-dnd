@@ -1868,6 +1868,86 @@ var Spells = class extends Abilities {
     // 3rd Level Spells
     //---------------------------------------------------------------------------------------------------
 
+    static animate_dead(options={}) {
+        const original_spell = {...database.spells.data["Animate Dead"]}
+        const spell = {...original_spell, ...options}
+        const creature = impersonated()
+        const targets = allSelected()
+
+        let max_targets = 2; {
+            const levels = [7, 9, 11] 
+            if (creature.spellcasting_level >= levels[0]) max_targets += 1
+            if (creature.spellcasting_level >= levels[1]) max_targets += 1
+            if (creature.spellcasting_level >= levels[2]) max_targets += 1
+        }
+        if (targets.length > max_targets) return {
+            success: false,
+            message: `${creature.name_color} can only select up to ${max_targets} targets for this spell.`
+        }
+
+        for (const target of targets) {
+            // Reassert Control
+            if (["Zombie", "Skeleton"].includes(target.name)) {
+                const undead = target
+
+                undead.owners = creature.owners
+                undead.attitude = creature.attitude
+                undead.set_condition("Animate Dead", 14400)
+                
+                console.log(
+                    `${creature.name_color} cast reasserts control over ${undead.name_color}.`, 
+                "all")
+            }
+            // Animate
+            else {
+                if (target.type != "Humanoid") {
+                    console.log(`${creature.name_color} tried to raise ${target.name_color}'s remains but chose an invalid non-humanoid target.`)
+                    continue
+                }
+                if (!Object.keys(target.conditions).includes("Dead")) {
+                    console.log(`${creature.name_color} tried to raise a target that is still alive.`)
+                    continue
+                }
+
+                const response = input({
+                    type: {
+                        value: "Zombie, Skeleton",
+                        type: "radio",
+                        label: `Turn ${target.name} into`,
+                        options: {
+                            value: "string"
+                        }
+                    }
+                })
+                if (Object.keys(response).length == 0) response.type = "Skeleton";
+
+                const undead_token_id = MTScript.evalMacro(`[r:copyToken("${response.type}", 1, "Creatures")]`)
+                const undead = instance(undead_token_id)
+                
+                // From target
+                undead.x = target.x
+                undead.y = target.y
+                undead.facing = target.facing
+                undead.equipment = target.equipment
+                undead.inventory = target.inventory
+
+                // From creature
+                undead.owners = creature.owners
+                undead.attitude = creature.attitude
+                undead.set_condition("Animate Dead", 14400)
+                
+                console.log(
+                    `${creature.name_color} raised a ${undead.name_color} with ${target.name_color}'s remains.`, 
+                "all")
+                target.delete()
+            }
+        }
+
+        return {
+            success: true
+        }
+    }
+
     static mass_healing_word(spell) {
         const creature = impersonated()
         const targets = allSelected()
