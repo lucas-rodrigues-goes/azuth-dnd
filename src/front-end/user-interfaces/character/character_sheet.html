@@ -578,6 +578,7 @@
 						// Append Skills with bonuses
 						for (const skill in character.skills) {
 							const title = capitalize(skill)
+							if (["Strength", "Dexterity", "Constitution", "Intelligence", "Wisdom", "Charisma"].includes(title)) continue
 							const value = bonusOf(character.skills[skill])
 							skills_container.appendChild(title_value({title, value}))
 						}
