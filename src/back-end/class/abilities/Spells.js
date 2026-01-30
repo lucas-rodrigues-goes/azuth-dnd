@@ -720,6 +720,7 @@ var Spells = class extends Abilities {
 
         // Ray of Frost condition
         if(attack_return?.hit_result?.message?.includes("hit")) {
+            Sound.play("piercing")
             target.set_condition("Ray of Frost", spell.duration)
         }
 
@@ -841,6 +842,39 @@ var Spells = class extends Abilities {
     //---------------------------------------------------------------------------------------------------
     // 1st Level Spells
     //---------------------------------------------------------------------------------------------------
+
+    static earth_tremor(options = {}) {
+        const original_spell = {...database.spells.data["Earth Tremor"]}
+        const spell = {...original_spell, ...options}
+        const creature = impersonated()
+
+        let die_amount = 1; {
+            const levels = [3, 5, 7] 
+            if (creature.spellcasting_level >= levels[0]) die_amount += 1
+            if (creature.spellcasting_level >= levels[1]) die_amount += 1
+            if (creature.spellcasting_level >= levels[2]) die_amount += 1
+        }
+
+        Sound.play("thunder")
+        const save_return = Spells.make_spell_save({
+            ...spell,
+            targets: allSelected(),
+            max_targets: 100,
+            damage_dice: [{die_amount: die_amount, die_size: 6, damage_type: "Bludgeoning"}],
+            saving_throw_score: "Dexterity"
+        })
+        if (!save_return.success) return save_return
+
+        // Apply effect
+        for (const element of save_return.targets) {
+            Sound.play("bludgeoning")
+            if (!element.save_result.success) {
+                element.target.set_condition("Prone", -1)
+            }
+        }
+
+        return save_return
+    }
 
     static inflict_wounds(options = {}) {
         const original_spell = {...database.spells.data["Inflict Wounds"]}
@@ -1494,6 +1528,63 @@ var Spells = class extends Abilities {
     //---------------------------------------------------------------------------------------------------
     // 2nd Level Spells
     //---------------------------------------------------------------------------------------------------
+
+    static lesser_restoration (options = {}) {
+        const original_spell = {...database.spells.data["Lesser Restoration"]}
+        const spell = {...original_spell, ...options}
+        const creature = impersonated()
+        const target = selected()
+
+        // Validate Visibility
+        const target_visibility = creature.target_visibility()
+        if (target_visibility == 0) return {
+            success: false,
+            message: `${creature.name_color} needs to see their target.`
+        }
+
+        // Validate Range
+        const range_validation = Spells.validate_spell_range({creature, target, range: spell.range})
+        if (range_validation.outOfRange) return {
+            success: false,
+            message: `${creature.name_color} tried to cast ${spell.name}, but their target is out of range.`
+        }
+
+        // Apply effect
+        const removable_conditions = ["Blinded", "Deafened", "Paralyzed", "Poisoned"]
+            .filter(a => Object.keys(target.conditions).includes(a))
+        let condition = undefined;
+        if (removable_conditions.length < 1) return {
+            success: false,
+            message: `${creature.name_color} tried to cast ${spell.name}, but the target has no removable conditions.`
+        }
+        else if (removable_conditions.length == 1) condition = removable_conditions[0]
+        else {
+            const response = input({
+                "condition": {
+                    value: removable_conditions.join(", "),
+                    label: "Condition to end",
+                    type: "radio",
+                    options: {
+                        value: "string"
+                    }
+                }
+            })
+            if (Object.keys(response).length == 0) return {
+                success: false,
+                message: `You must choose a condition to end.`
+            }
+            condition = response.condition
+        }
+        target.remove_condition(condition)
+
+        return {
+            success: true,
+            message: (creature.id != target.id
+                ? `${creature.name_color} cast ${spell.name} on ${target.name_color}, who ending the ${condition} condition.`
+                : `${creature.name_color} cast ${spell.name} on themselves, ending the ${condition} condition.`
+            )
+        }
+    }
 
     static scorching_ray (options = {}) {
         const original_spell = {...database.spells.data["Scorching Ray"]}
