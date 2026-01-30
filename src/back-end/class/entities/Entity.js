@@ -236,6 +236,60 @@ var Entity = class {
         this.facing = calculate_direction(this, target)
     }
     
+    get boundaries() {
+        const offset = (sizeToCells[this.size] || 0) * settings.cellSize;
+        const cellBorder = 0.5 * settings.cellSize;
+        
+        return {
+            topLeft: {
+                x: this.x - offset - cellBorder, 
+                y: this.y - offset - cellBorder
+            },
+            topRight: {
+                x: this.x + offset + cellBorder, 
+                y: this.y - offset - cellBorder
+            },
+            bottomRight: {
+                x: this.x + offset + cellBorder,
+                y: this.y + offset + cellBorder
+            },
+            bottomLeft: {
+                x: this.x - offset - cellBorder, 
+                y: this.y + offset + cellBorder
+            },
+            center: {
+                x: this.x, 
+                y: this.y
+            }
+        };
+    }
+
+    occupiesSameSpace(otherEntity) {
+        if (!otherEntity || otherEntity.id === this.id) return false;
+        
+        // Get boundaries of both entities
+        const bounds1 = this.boundaries;
+        const bounds2 = otherEntity.boundaries;
+        
+        // Check if this entity's CENTER is inside the other entity's boundaries
+        const thisInOther = (
+            this.x >= bounds2.topLeft.x &&
+            this.x <= bounds2.bottomRight.x &&
+            this.y >= bounds2.topLeft.y &&
+            this.y <= bounds2.bottomRight.y
+        );
+        
+        // Check if the other entity's CENTER is inside this entity's boundaries
+        const otherInThis = (
+            otherEntity.x >= bounds1.topLeft.x &&
+            otherEntity.x <= bounds1.bottomRight.x &&
+            otherEntity.y >= bounds1.topLeft.y &&
+            otherEntity.y <= bounds1.bottomRight.y
+        );
+        
+        // They occupy the same space if either center is inside the other's boundaries
+        return thisInOther || otherInThis;
+    }
 
     //=====================================================================================================
     // MapTool sync management
