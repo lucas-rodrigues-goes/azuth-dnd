@@ -64,12 +64,18 @@ var Time = class {
             const creatures = mapCreatures();
             let total_expired = 0;
             
+            // Cache daytime calculation if provided
+            const shouldUpdateState = daytime !== undefined;
+            
             for (const creature of creatures) {
-                creature.update_state({daytime})
-                if (creature && typeof creature.check_expired_conditions === 'function') {
-                    const had_expired = creature.check_expired_conditions();
-                    if (had_expired) total_expired++;
-                }
+                // Only update state if needed
+                if (shouldUpdateState) creature.update_state({daytime})
+                
+                // Skip if creature has no conditions
+                if (Object.keys(creature.conditions).length == 0) continue
+                
+                const had_expired = creature.check_expired_conditions()
+                if (had_expired) total_expired++;
             }
             
             if (total_expired > 0) {
