@@ -54,11 +54,26 @@ var Initiative = class {
         return return_list
     }
 
-    static add_creature (creature=selected(), nextRound = false) {
+    static add_creature (creature=selected(), nextRound = true) {
         if (!creature) return
 
-        // Roll
-        const initial_offset = Math.ceil(Math.random() * 6) + creature.initiative_mod + (nextRound ? 12 : 0)
+        // Calculate offset based on whether it's for next round
+        let initial_offset
+        if (nextRound) {
+            // Get the last creature's offset from turn order
+            const turnOrder = this.turn_order
+            if (turnOrder.length > 0) {
+                const lastCreatureId = turnOrder[turnOrder.length - 1]
+                const lastCreatureOffset = this.creatures[lastCreatureId].offset
+                initial_offset = Math.ceil(Math.random() * 6) + creature.initiative_mod + lastCreatureOffset
+            } else {
+                // If no creatures in initiative, use random roll
+                initial_offset = Math.ceil(Math.random() * 6) + creature.initiative_mod
+            }
+        } else {
+            // Normal random roll for current round
+            initial_offset = Math.ceil(Math.random() * 6) + creature.initiative_mod
+        }
 
         // Object
         this.creatures = {
@@ -150,10 +165,34 @@ var Initiative = class {
 
     static get current_creature () {
         if (this.turn_order.length < 1) return null
+        
         const current_creature_id = this.turn_order[0]
+        const creatures = this.creatures
+        
+        // If the current creature doesn't have "Playing" status, set it
+        if (creatures[current_creature_id] && creatures[current_creature_id].status !== "Playing") {
+            const creature_init = creatures[current_creature_id]
+            this.creatures = {
+                ...creatures,
+                [current_creature_id]: {
+                    ...creature_init,
+                    status: "Playing",
+                    description: ""
+                }
+            }
+            
+            // Also trigger turn_start for the creature
+            const creature = instance(current_creature_id)
+            if (creature) {
+                creature.turn_start()
+                console.log(`${creature.name_color} started their turn.`, "all")
+            }
+            
+            Events.onInitiativeUpdate()
+        }
 
         // Decrease initiative for all if current init > 12
-        while (this.creatures[current_creature_id].initiative >= 12 && false) {
+        while (creatures[current_creature_id] && creatures[current_creature_id].initiative >= 12 && false) {
             for (const id of this.turn_order) {
                 this.creatures = {
                     ...this.creatures,
