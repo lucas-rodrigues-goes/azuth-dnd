@@ -57,6 +57,14 @@ var Settings = class {
         this.#set_obj_key("cameraAutoMove", value) 
     }
 
+    // Camera Move on Character Movement
+    static #DEFAULT_VISION_MEMORY = true
+    static get visionMemory() { return this.#get_obj_key("visionMemory", this.#DEFAULT_VISION_MEMORY) }
+    static set visionMemory(value) {
+        if (![true, false].includes(value)) return
+        this.#set_obj_key("visionMemory", value) 
+    }
+
     // Cell Size
     static #DEFAULT_CELL_SIZE = 150
     static get cellSize() {

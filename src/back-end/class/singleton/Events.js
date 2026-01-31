@@ -12,10 +12,12 @@ var Events = class {
 
         static every1000ms () { try {
             if (impersonated()) macro(`exposeFOW(getCurrentMapName(), getImpersonated())`)
+
             this.updateAll()
         } catch (error) {console.error("Events.every1000ms()", error)} }
 
         static every5000ms () { try {
+            if (isGM && !settings.visionMemory) macro(`exposePCOnlyArea()`)
 
         } catch (error) {console.error("Events.every5000ms()", error)} }
 
