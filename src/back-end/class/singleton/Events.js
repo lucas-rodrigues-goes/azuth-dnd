@@ -11,6 +11,7 @@ var Events = class {
         //=====================================================================================================
 
         static every1000ms () { try {
+            if (impersonated()) macro(`exposeFOW(getCurrentMapName(), getImpersonated())`)
             this.updateAll()
         } catch (error) {console.error("Events.every1000ms()", error)} }
 
@@ -68,6 +69,9 @@ var Events = class {
         } catch (error) {console.error("Events.onCampaignLoad()", error)} }
 
         static onInitiativeUpdate () { try {
+            const currentCreature = instance(Initiative.current_creature)
+            if (!!currentCreature && (currentCreature.owners.includes(player) || isGM)) impersonate(currentCreature.id)
+
             this.updateInitiativeCreatures({runOnAllClients: true})
             macro(`execFunction("c", '["Events.updateAll()"]', 0, "all")`)
         } catch (error) {console.error("Events.onInitiativeUpdate()", error)} }
