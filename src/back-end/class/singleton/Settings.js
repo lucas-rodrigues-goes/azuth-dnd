@@ -49,6 +49,14 @@ var Settings = class {
         this.#set_obj_key("gridMovement", value) 
     }
 
+    // Camera Move on Character Movement
+    static #DEFAULT_CAMERA_AUTO_MOVE = true
+    static get cameraAutoMove() { return this.#get_obj_key("cameraAutoMove", this.#DEFAULT_CAMERA_AUTO_MOVE) }
+    static set cameraAutoMove(value) {
+        if (![true, false].includes(value)) return
+        this.#set_obj_key("cameraAutoMove", value) 
+    }
+
     // Cell Size
     static #DEFAULT_CELL_SIZE = 150
     static get cellSize() {
