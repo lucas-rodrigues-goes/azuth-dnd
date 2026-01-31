@@ -157,6 +157,14 @@
                     InitiativeCreature(creature)
                 )
             }
+
+            backend(`{
+                const currentCreature = instance(Initiative.current_creature);
+                if (!!currentCreature && (currentCreature.owners.includes(player) || isGM)) {
+                    impersonate(currentCreature.id);
+                    if (settings.cameraAutoMove) currentCreature.go_to();
+                }
+            }`)
         }
 
         //-----------------------------------------------------------------------------------------------------
