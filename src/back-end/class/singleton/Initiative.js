@@ -158,7 +158,7 @@ var Initiative = class {
         )
 
         // Set move lock
-        moveLock(return_value.length < 1)
+        moveLock(false)
 
         return return_value
     }
@@ -170,7 +170,7 @@ var Initiative = class {
         const creatures = this.creatures
         
         // If the current creature doesn't have "Playing" status, set it
-        if (creatures[current_creature_id] && creatures[current_creature_id].status !== "Playing") {
+        if (creatures[current_creature_id] && !["Playing", "Suspended"].includes(creatures[current_creature_id].status)) {
             const creature_init = creatures[current_creature_id]
             this.creatures = {
                 ...creatures,
@@ -185,25 +185,9 @@ var Initiative = class {
             const creature = instance(current_creature_id)
             if (creature) {
                 creature.turn_start()
-                console.log(`${creature.name_color} started their turn.`, "all")
             }
             
             Events.onInitiativeUpdate()
-        }
-
-        // Decrease initiative for all if current init > 12
-        while (creatures[current_creature_id] && creatures[current_creature_id].initiative >= 12 && false) {
-            for (const id of this.turn_order) {
-                this.creatures = {
-                    ...this.creatures,
-                    [id]: {
-                        ...this.creatures[id],
-                        initiative: this.creatures[id].initiative - 12,
-                    }
-                }
-            }
-
-            this.current_round += 1
         }
 
         return current_creature_id
