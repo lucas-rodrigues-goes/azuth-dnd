@@ -67,7 +67,7 @@
 	    }
 	    const validMovement = validateMovement()
 	    if (validMovement && creature) {
-	        if (isPlaying) creature.go_to();
+	        if (isPlaying && settings.cameraAutoMove) creature.go_to();
 	        creature.onMove();
 	    }
 	    (validMovement ? 1 : 0);
