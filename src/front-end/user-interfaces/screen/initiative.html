@@ -153,6 +153,7 @@
             const elem = document.getElementById("initiative-creatures")
             elem.clearChildren()
             for (const creature of creatures) {
+                if (!isGM && creature.hide) continue
                 elem.appendChild(
                     InitiativeCreature(creature)
                 )

@@ -334,22 +334,13 @@ var Events = class {
 
         // Initiative
         static updateInitiativeCreatures ({runOnAllClients = false} = {}) {
-            const creatures = Initiative.creatures_info
-            const filteredCreatures = []
-            for (const object of creatures) {
-                const creature = instance(object.id)
-
-                if (!isGM && creature.has_conditions(["Hidden", "Invisible"], "any") && creature.attitude != "friendly") continue
-                else filteredCreatures.push(object)
-            }
-
             Events.runJSfunction({
                 name: "Initiative",
                 type: "Overlay",
                 functionName: "updateInitiativeCreatures",
                 runOnAllClients: runOnAllClients,
                 args: [{
-                    creatures: filteredCreatures
+                    creatures: Initiative.creatures_info
                 }]
             })
         }

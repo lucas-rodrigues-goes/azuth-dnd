@@ -37,6 +37,7 @@ var Initiative = class {
                 continue
             }
             const initiative_info = creatures[id]
+            const hide = creature.has_conditions(["Hidden", "Invisible"], "any") && creature.attitude != "friendly"
 
             return_list.push({
                 id: id,
@@ -48,6 +49,7 @@ var Initiative = class {
                 description: initiative_info.description,
                 initiative: initiative_info.initiative - creatures[this.turn_order[0]].initiative,
                 offset: initiative_info.offset,
+                hide: hide,
             })
         }
 
