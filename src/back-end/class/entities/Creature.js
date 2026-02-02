@@ -235,8 +235,8 @@ var Creature = class extends Entity {
                         else if (this.has_feature("Darkvision")) DEFAULT_TYPE = "Darkvision"
                         else DEFAULT_TYPE = "Normal"
 
-                        const getMapVision = daytime || MTScript.evalMacro(`[r:getMapVision()]`)
-                        const day_light = ["day", "dia"].includes(getMapVision.toLowerCase())
+                        const mapVision = daytime || MTScript.evalMacro(`[r:getMapVision()]`)
+                        const day_light = ["day", "dia"].includes(mapVision.toLowerCase())
                         if (day_light) DEFAULT_TYPE += " Day"
                     }
                     this.sight = hasCondition ? "Blinded" : DEFAULT_TYPE
@@ -290,7 +290,7 @@ var Creature = class extends Entity {
 
             // Terrain Modifier
             MTScript.evalMacro(`
-                [h: setTerrainModifier('{"terrainModifier":1.5,"terrainModifierOperation":"MULTIPLY","terrainModifiersIgnored":["NONE"]}', "${this.id}")]
+                [h: setTerrainModifier('{"terrainModifier":1.0,"terrainModifierOperation":"MULTIPLY","terrainModifiersIgnored":["NONE"]}', "${this.id}")]
             `)
         }
 
@@ -469,7 +469,8 @@ var Creature = class extends Entity {
 
             // Vision Modifiers
             const isInvisible = hidden_creature.has_condition("Invisible")
-            const isDay = MTScript.evalMacro(`[r:getMapVision()]`) == "Day"
+            const mapVision = MTScript.evalMacro(`[r:getMapVision()]`)
+            const isDay = ["day", "dia"].includes(mapVision.toLowerCase())
             let isFacing = false; {
                 const facingDirections = revealing_creature.facing.split("-")
                 const directionToTarget = calculate_direction(revealing_creature, hidden_creature).split("-")
@@ -2355,15 +2356,6 @@ var Creature = class extends Entity {
     // Keyboard Movement
     //=====================================================================================================
 
-    #get_gridless_movement(speed_ft_per_round, tick_ms = 200) {
-        const ticks_per_round = 6000 / tick_ms; // 6 seconds = 6000ms
-        const movement_per_tick = speed_ft_per_round / ticks_per_round;
-        const rounded_movement = Math.round((movement_per_tick * 10) / 10)
-        const minimum_movement = 0.5
-
-        return Math.max(minimum_movement, rounded_movement)
-    }
-
     keyboard_move(direction) {
         try {
             const isInCombat = Initiative.turn_order.includes(this.id)
@@ -2371,7 +2363,7 @@ var Creature = class extends Entity {
             const visibility = this.has_condition("Hidden") && !this.player ? "gm" : "all"
             
             macro(`setTokenSnapToGrid(${settings.gridMovement}, getImpersonated())`)
-            const distance = settings.gridMovement ? 5 : this.#get_gridless_movement(this.speed)
+            const distance = 5;
             
             const isValidMovement = () => {
                 if (!isInCombat) return {success: true}
@@ -2391,7 +2383,7 @@ var Creature = class extends Entity {
                 this.facing = direction
                 this.move(direction, distance/5)
                 this.onMove()
-                macro(`goto(getImpersonated())`)
+                if (settings.cameraAutoMove) this.go_to()
                 macro(`exposeFOW(getCurrentMapName(), getImpersonated())`)
             }
         } catch (error) {console.log(error)}
