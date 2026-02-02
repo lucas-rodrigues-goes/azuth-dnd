@@ -76,6 +76,7 @@ var input = function(fields) {
             [h, foreach(key, '${JSON.stringify(return_fields)}'): 
                 output = json.set(output, key, eval(key))
             ]
+            [h: output = json.set(output, "success", "true")]
             [r: output]
         };{
             [r: "{}"]

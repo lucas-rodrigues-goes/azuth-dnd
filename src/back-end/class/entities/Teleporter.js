@@ -11,7 +11,17 @@ var Teleporter = class extends Entity {
             const teleporterName = this.token.getName().split(":");
             const destinationMap = teleporterName[0];
             const destinationTeleporter = teleporterName.length > 1 ? teleporterName[1] : undefined
-            if (creature) Initiative.turn_order.includes(creature.id);
+            if (creature && Initiative.turn_order.includes(creature.id)) return
+
+            if (Object.keys(input({
+                nothing: {
+                    value: `Are you sure you want to go to ${destinationMap}?`,
+                    type: "label",
+                    options: {
+                        span: "true"
+                    }
+                }
+            })).length == 0) return
 
             const oldMap = macro(`getCurrentMapName()`)
             const oldZoom = macro(`getZoom()`)
