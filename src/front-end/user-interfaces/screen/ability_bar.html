@@ -68,6 +68,7 @@
         <script>
         
         const isGM = '+isGM()+' == 1
+        window.onresize = () => {updateAbilityBar(old_abilityBar)}
 
         //-----------------------------------------------------------------------------------------------------
         // Update Elements
@@ -110,15 +111,14 @@
 
         let old_abilityBar
         function updateAbilityBar (args = {}) {
-            const { abilities = [] } = args
+            const { abilities = [], abilityBarRows = 1 } = args
+            const proportion = window.innerWidth / window.innerHeight
             if (old_abilityBar == JSON.stringify(args)) return
             old_abilityBar = JSON.stringify(args)
+            let slot_amount = 0;
 
             const elem = document.getElementById("abilities")
             elem.clearChildren()
-
-            // Rows
-            let rows = 2
 
             let ordered = undefined
             let abilityAreaElem = undefined
@@ -127,24 +127,31 @@
                     ordered = ability.ordered
                     if (abilityAreaElem) {
                         // Always even number of slots
-                        while ((abilityAreaElem.children.length % rows) != 0) abilityAreaElem.appendChild(
+                        while ((abilityAreaElem.children.length % abilityBarRows) != 0) abilityAreaElem.appendChild(
                             AbilitySlot()
                         )
+                        slot_amount ++
                         elem.appendChild(abilityAreaElem)
                     }
-                    abilityAreaElem = AbilityArea({rows})
+                    abilityAreaElem = AbilityArea({rows: abilityBarRows})
                 }
 
                 abilityAreaElem.appendChild(
                     AbilitySlot(ability)
                 )
+                slot_amount ++
             }
-            while ((abilityAreaElem.children.length % rows) != 0) abilityAreaElem.appendChild(
+            while ((abilityAreaElem.children.length % abilityBarRows) != 0) abilityAreaElem.appendChild(
                 AbilitySlot()
             )
+            slot_amount ++
             elem.appendChildren([
                 abilityAreaElem
             ])
+
+            // Adjust row amount recursively
+            const aprox_width = 20+(slot_amount*40/abilityBarRows)
+            if (aprox_width > (window.innerWidth - 500) && abilityBarRows < 6) updateAbilityBar({...args, abilityBarRows: abilityBarRows + 1})
         }
 
         let old_page
