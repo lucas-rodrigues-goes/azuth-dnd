@@ -177,6 +177,13 @@ var Creature = class extends Entity {
                 if (source.get_condition("Grappling").target == this.id) source.remove_condition("Grappling")
             }
         }
+
+        // Teleport
+        for (const teleporter of mapTeleporters()) {
+            if (this.occupiesSameSpace(teleporter)) {
+                teleporter.teleport(this)
+            }
+        }
     }
 
     //=====================================================================================================
@@ -2455,7 +2462,7 @@ var Creature = class extends Entity {
             inventory: this.#inventory,
             notes: this.#notes,
             spellcasting_level: this.#spellcasting_level,
-            attitude: this.#attitude
+            attitude: this.#attitude,
         };
     
         this.token.setName(this.#name);

@@ -164,19 +164,23 @@ var resetImpersonated = function () {
 }
 
 var mapCreatures = function (map_name) {
-    const creatures = []
-    let tokens; {
-        if (map_name) tokens = MapTool.tokens.getMapTokens(map_name)
-        else tokens = MapTool.tokens.getMapTokens()
-    }
-
+    const entities = []
+    const tokens = map_name ? MapTool.tokens.getMapTokens(map_name) : MapTool.tokens.getMapTokens()
     for (const token of tokens) {
-        const creature = instance(token.getId())
-
-        // Validate
-        if (creature instanceof Creature) creatures.push(creature)
+        const entity = instance(token.getId())
+        if (entity instanceof Creature) entities.push(entity)
     }
-    return creatures
+    return entities
+}
+
+var mapTeleporters = function (map_name) {
+    const entities = []
+    const tokens = map_name ? MapTool.tokens.getMapTokens(map_name) : MapTool.tokens.getMapTokens()
+    for (const token of tokens) {
+        const entity = instance(token.getId())
+        if (entity instanceof Teleporter) entities.push(entity)
+    }
+    return entities
 }
 
 // Find Token ID
@@ -398,85 +402,6 @@ var calculate_direction_angle = function (source, target) {
 
     return Math.round(angle);
 };
-
-
-var teleport = function (map_name=undefined) {
-    try {
-
-        // Get name of map if not provided
-        if (!map_name) {
-            const id = getSelected()
-            if (id == "") return
-
-            let action
-            [action, map_name] = macro(`getGMName("${id}")`).split(":")
-            if (!map_name || action != "teleport") return
-        }
-
-        // Impersonated
-        const impersonatedId = impersonated()?.id || undefined
-        const isInCombat = Initiative.turn_order.includes(impersonatedId)
-        let bringImpersonated = false
-        let allowTeleport = Number(macro(`isGM()`)) == 1
-        if (impersonatedId && !isInCombat) {
-            const teleporterName = `teleport:${map_name}`
-
-            const teleporterSize = macro(`getSize("${teleporterName}")`)
-            console.log(teleporterSize)
-            const maxDistance = {
-                "Large": 2,
-                "Huge": 3,
-                "Gargantuan": 4,
-                "Colossal": 6
-            }[teleporterSize] || 1
-
-            const teleporterVisible = Number(macro(`getVisible(getSelected())`))
-            const distanceToTeleporter = Number(macro(`getDistance(getImpersonated(), 0, getSelected())`))
-
-            if ((distanceToTeleporter <= maxDistance) && teleporterVisible == 1) {
-                bringImpersonated = true
-                allowTeleport = true
-            }
-        }
-        if (!allowTeleport) return
-
-        // Teleport
-        const oldMap = macro(`getCurrentMapName()`)
-        const oldZoom = macro(`getZoom()`)
-        const allMaps = macro(`getAllMapNames()`).split(",")
-        if (!allMaps.includes(map_name)) return
-
-        // Set new map
-        macro(`setCurrentMap("${map_name}")`)
-        macro(`setZoom(${oldZoom})`)
-        macro(`deselectTokens()`)
-
-        // Go to teleporter on other side
-        try {
-            const teleporterName = `teleport:${oldMap}`
-            macro(`goto("${teleporterName}")`)
-
-            if (bringImpersonated) {
-                const teleporterSize = macro(`getSize("${teleporterName}")`)
-                const variance = {
-                    "Large": 2,
-                    "Huge": 3,
-                    "Gargantuan": 4,
-                    "Colossal": 6
-                }[teleporterSize] || 1
-
-                const x = Number(macro(`getTokenX(0, "${teleporterName}")`)) + roll_dice(1, variance) - 1
-                const y = Number(macro(`getTokenY(0, "${teleporterName}")`)) + roll_dice(1, variance) - 1
-
-                macro(`moveTokenFromMap("${impersonatedId}", "${oldMap}", ${x}, ${y})`)
-                macro(`exposeFOW(getCurrentMapName(), getImpersonated())`)
-            }
-        } catch (error) {
-            console.log("Teleporter unavailable on other side.")
-        }
-
-    } catch (error) {console.log(error)}
-}
 
 function capitalize(text, capitalizeAllFirstLetters = false) {
     if (typeof text !== 'string' || text.length === 0) {
