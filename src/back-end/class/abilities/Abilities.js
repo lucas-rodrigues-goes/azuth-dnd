@@ -1131,7 +1131,7 @@ var Abilities = class {
                 if (target.has_condition("Unconscious")) output += 1
 
                 // Unseen Attacker
-                if (creature.has_conditions(["Hidden", "Invisible"], "any")) {
+                if (creature.has_conditions(["Hidden", "Invisible"], "any") || target.target_visibility(creature) == 0) {
                     if (!view_only) {
                         creature.maintain_stealth(true)
                         target.passive_search()
