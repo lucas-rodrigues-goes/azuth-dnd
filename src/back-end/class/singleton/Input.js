@@ -142,7 +142,7 @@ var give_items = function () {
         while (true) {
             const response = input({
                 "itemName": {
-                    value: itemsOptions,
+                    value: itemsOptions + ",Custom",
                     label: "Select an item",
                     type: "list",
                     options: {
@@ -168,10 +168,23 @@ var give_items = function () {
             })
             if (Object.keys(response).length == 0) break
 
-            const {amount, itemName, targetType} = response
+            const {amount, targetType} = response
+            let {itemName} = response
+            const targets = targetType == "Impersonated" ? [impersonated()] : allSelected()
             targetTypeSelect = targetType == "All Selected" ? "0" : "1"
 
-            const targets = targetType == "Impersonated" ? [impersonated()] : allSelected()
+            if (itemName == "Custom") {
+                const response = input({
+                    "itemName": {
+                        value: " ",
+                        label: "Item Name",
+                        type: "text",
+                    },
+                })
+                if (Object.keys(response).length == 0) break
+                itemName = response.itemName
+            }
+
             for (const target of targets) {
                 target.receive_item(itemName, Number(amount))
                 console.indent(target.inventory)
