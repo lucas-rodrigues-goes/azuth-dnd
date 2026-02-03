@@ -32,7 +32,7 @@
         conditions: [],
 
         // Equipment only
-        bonus_armor_class: 0,
+        bonuses: {},
         resistances: {},
 
         // Weapon Only
@@ -60,15 +60,19 @@
     
     async function submit() {
         // Treat Numbers
-        const keys = ["weight", "price", "max_stack", "bonus_armor_class", "base_armor_class", "recovery"]
+        const keys = ["weight", "price", "max_stack", "recovery"]
         for (const key of keys) item[key] = Number(item[key]) || 0
+
+        // Remove legacy bonus_armor_class if it exists
+        if (item.bonus_armor_class !== undefined) {
+            delete item.bonus_armor_class;
+        }
 
         // Backend
         const request = `database.set_item(`+JSON.stringify(item)+`)`
         
-        console.log(request)
         backend(request)
-        //closePage("Item")
+        closePage("Item")
     }
 
     function formatDamageForInput(damageArray) {
@@ -185,6 +189,40 @@
         const updateDamageAttribute = {input: function (event) {
             item.damage = parseDamageInput(this.value);
         }};
+        const updateBonusesAttribute = {input: function (event) {
+            const bonuses = {};
+            const entries = this.value.split(",").map(s => s.trim());
+            
+            for (const entry of entries) {
+                if (!entry) continue;
+                const colonIndex = entry.indexOf(":");
+                if (colonIndex === -1) continue;
+                
+                const key = entry.substring(0, colonIndex).trim();
+                const value = entry.substring(colonIndex + 1).trim();
+                const numValue = Number(value);
+                
+                if (!isNaN(numValue)) {
+                    bonuses[key] = numValue;
+                } else {
+                    console.log(`Invalid number value for bonus "`+key+`": "`+value+`"`);
+                }
+            }
+            
+            item.bonuses = bonuses;
+            console.indent(item)
+        }};
+
+        // Helper function to format bonuses for display
+        function formatBonusesForInput(bonusesObject) {
+            if (!bonusesObject || typeof bonusesObject !== "object" || Object.keys(bonusesObject).length === 0) {
+                return "";
+            }
+            
+            return Object.entries(bonusesObject)
+                .map(([key, value]) => key+`: `+value)
+                .join(", ");
+        }
 
         // Create elements
         const nameInput = input({
@@ -283,6 +321,18 @@
         subtypeSelect.children[0].value = item.subtype || ""
         raritySelect.children[0].value = item.rarity || ""
 
+        // Initialize bonuses if it doesnt exist or handle legacy bonus_armor_class
+        if (!item.bonuses) {
+            item.bonuses = {};
+        }
+        // Migrate legacy bonus_armor_class to bonuses
+        if (item.bonus_armor_class && item.bonus_armor_class !== 0) {
+            if (!item.bonuses.armor_class) {
+                item.bonuses.armor_class = item.bonus_armor_class;
+            }
+            delete item.bonus_armor_class;
+        }
+
         // Content
         tab.style.overflow = "hidden"
         tab.appendChildren([
@@ -322,9 +372,19 @@
             {tag: "div", style: {position: "absolute", left: "50%", width: "50%", height: "100%", overflow: "auto"}, children: [
                 // Equipment Fields (conditionally visible)
                 container({id: "equipment-fields", title: "Equipment Properties", children: [
-                    input({id: "bonus_armor_class", placeholder: "Bonus Armor Class", options: {
-                        input: {attributes: {type: "number", value: item.bonus_armor_class || 0}, events: updateNumberAttribute}
-                    }}),
+                    // Changed from bonus_armor_class to bonuses
+                    input({
+                        id: "bonuses", 
+                        placeholder: "Bonuses (armor_class: 2, strength: 1)", 
+                        options: {
+                            input: {
+                                attributes: { 
+                                    value: formatBonusesForInput(item.bonuses) 
+                                }, 
+                                events: updateBonusesAttribute
+                            }
+                        }
+                    }),
                     input({id: "resistances", placeholder: "Resistances (JSON object)", options: {
                         input: {attributes: {value: JSON.stringify(item.resistances) || "{}"}, events: {input: function (event) {
                             try {

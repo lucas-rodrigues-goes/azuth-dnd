@@ -281,12 +281,12 @@ var Creature = class extends Entity {
                 // Spells
                 "Blur", "Rage", "Shield", "Hold Person", 
                 "Hold Monster", "Bless", "Absorb Elements",
-                "Hex", "Hunter's Mark"
+                "Hex", "Hunter's Mark", "Light",
             ]
             if (conditions_with_state.includes(condition)) this.set_state(condition, hasCondition)
 
             // Light effects
-            const conditions_with_light = ["Light", "Torch", "Hooded Lantern"]
+            const conditions_with_light = ["Light", "Torch", "Candle", "Hooded Lantern"]
             if (conditions_with_light.includes(condition)) this.set_light(condition, hasCondition)
 
             // Concentration && Spellcasting
@@ -619,7 +619,19 @@ var Creature = class extends Entity {
     // Ability Scores
     //=====================================================================================================
 
-    get ability_scores() { return this.#ability_scores }
+    get ability_scores() {
+        const ability_scores = this.#ability_scores
+        const equipment_bonuses = this.equipment_bonuses
+
+        for (const score in ability_scores) {
+            const additive_bonus = equipment_bonuses[score]
+            const setter_bonus = equipment_bonuses[`set_${score}`]
+            if (additive_bonus) ability_scores[score] += additive_bonus
+            if (setter_bonus) ability_scores[score] = Math.max(ability_scores[score], setter_bonus)
+        }
+
+        return ability_scores
+    }
 
     get score_bonus() {
         let bonus = function (score_value) {
@@ -1143,19 +1155,7 @@ var Creature = class extends Entity {
         }
         
         // Equipment Bonus
-        let equipment_bonus = 0; {
-            const equipment = this.#equipment;
-            for (const slot in equipment) {
-                const itemData = equipment[slot];
-                if (itemData && !slot.includes("secondary")) {
-                    const item = database.items.data[itemData.name]; // Access the item name first
-                    if (item) {
-                        const bonus_ac = item.bonus_armor_class || 0;
-                        equipment_bonus += Number(bonus_ac);
-                    }
-                }
-            }
-
+        let equipment_bonus = this.equipment_bonuses.armor_class || 0; {
             // Dueling Proficiency
             const main_weapon = database.items.data?.[this.equipment?.["primary main hand"]?.name]
             if (
@@ -1960,6 +1960,31 @@ var Creature = class extends Entity {
     // Inventory & Equipment
     //=====================================================================================================
 
+    get equipment_bonuses () {
+        const bonuses = {}
+        for (const slotName in this.equipment) {
+            const slot = this.equipment[slotName]
+            if (!slot) continue
+
+            const {amount, name} = slot;
+            const item = database?.items?.data?.[name]
+
+            // Validate item
+            if (name.includes("secondary")) continue
+            if (!item) continue
+            if (!item.bonuses) continue
+
+            // Add bonuses
+            for (const key in item.bonuses) {
+                if (!bonuses[key]) bonuses[key] = 0;
+                if (key.substring(0, 3)) bonuses[key] = Math.max(item.bonuses[key], bonuses[key])
+                else bonuses[key] += item.bonuses[key]
+            }
+        }
+
+        return bonuses
+    }
+
     get carry_weight () {
         const strength_score = Number(this.ability_scores.strength)
         const max = strength_score * 10
@@ -2030,9 +2055,10 @@ var Creature = class extends Entity {
     }
 
     receive_item(name, amount = 1) {
+        const DEFAULT_ITEM = { name: null, amount: 1, stackable: true };
         this.update_inventory_slots();
 
-        const item = database.get_item(name);
+        const item = database.get_item(name) || DEFAULT_ITEM;
         const max_stack = item.stackable ? item.max_stack || 20 : 1;
 
         // First loop: Check existing stacks
@@ -2064,7 +2090,7 @@ var Creature = class extends Entity {
     
     drop_item(index, amount) {
         // Helper functions
-        const DEFAULT_ITEM = { name: null, amount: 0 };
+        const DEFAULT_ITEM = { name: null, amount: 1, stackable: true };
         const getSlot = (container, index) => 
             (container === "inventory" ? this.#inventory[index] : this.#equipment[index]) || DEFAULT_ITEM;
         
@@ -2083,7 +2109,7 @@ var Creature = class extends Entity {
         // Define slot item
         const container = isInventoryIndex(index) ? "inventory" : "equipment"
         const slot = getSlot(container, index)
-        const item = database.get_item(slot.name);
+        const item = database.get_item(slot.name) || DEFAULT_ITEM;
     
         if (!slot.name) {
             console.log("No item to drop at the specified index.", "gm");
@@ -2392,6 +2418,7 @@ var Creature = class extends Entity {
                 this.onMove()
                 if (settings.cameraAutoMove) this.go_to()
                 macro(`exposeFOW(getCurrentMapName(), getImpersonated())`)
+                macro(`bringToFront("${this.id}")`)
             }
         } catch (error) {console.log(error)}
     }

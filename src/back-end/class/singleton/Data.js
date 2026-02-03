@@ -91,7 +91,7 @@ var data = class {
             properties=[],
 
             // Equipment-only
-            bonus_armor_class=0,
+            bonuses = {},
             resistances={},
             conditions=[],
 
@@ -131,7 +131,7 @@ var data = class {
                 switch (type) {
                     // Equipment
                     case "equipment":
-                        object = {...object, bonus_armor_class, resistances, conditions}
+                        object = {...object, bonuses, resistances, conditions}
                         break
                 }
 

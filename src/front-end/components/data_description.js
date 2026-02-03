@@ -60,7 +60,7 @@ let data_description; {
                     {tag: "div", style: {textAlign: "left"}, children: attributes},
                     // Description
                     object.description
-                        && {tag: "pre", style: {color: "#aaa", textAlign: "left", padding: 0, margin: 0, marginTop: "1vh"}, text: object?.description || ""},
+                        && {tag: "pre", style: {color: "#aaa", textAlign: "left", padding: 0, margin: 0, marginTop: "1vh"}, text: object.description.replace(/.nn/g, ".\n\n")},
                     object.description_higher_levels 
                         && {tag: "pre", style: {color: "#aaa", textAlign: "left", padding: 0, margin: 0, marginTop: "1vh"}, children: [
                             {tag: "b", style: {color: "#ddd"}, text: "At Higher Levels: "},
@@ -89,6 +89,7 @@ let data_description; {
         },
 
         item: async ({object, style=DEFAULT_STYLE}) => {
+            try {
             // Item from database
             const item = JSON.parse(await backend(`database.get_item("` + object.name + `")`)) || {}
 
@@ -109,10 +110,29 @@ let data_description; {
 
             // Damage
             let damage = ""
-            for (let i = 0 ; i < item.damage.length ; i++) {
-                const current = item.damage[i]
-                damage += current["die_ammount"] + "d" + current["die_size"] + " " + current["damage_type"].toLowerCase()
-                damage += i != item.damage.length - 1 ? ", " : "" // -> adds comma if it is not the last element
+            if (item?.damage?.length) {
+                for (let i = 0 ; i < item.damage.length ; i++) {
+                    const current = item.damage[i]
+                    damage += (current.die_amount || current.die_ammount) + "d" + current["die_size"] + " " + current["damage_type"].toLowerCase()
+                    damage += i != item.damage.length - 1 ? ", " : "" // -> adds comma if it is not the last element
+                }
+            }
+
+            // Bonuses (new)
+            let bonuses = ""
+            if (item.bonuses && typeof item.bonuses === "object") {
+                const bonusEntries = Object.entries(item.bonuses);
+                if (bonusEntries.length > 0) {
+                    bonuses = bonusEntries.map(([key, value]) => {
+                        // Format key: set_strength -> Set Strength, armor_class -> Armor Class
+                        let wordArray = key.split("_").map(word => capitalize(word))
+                        if (wordArray[0] == "Set") {
+                            wordArray.shift()
+                            return wordArray.join(" ") + " " + value
+                        }
+                        return wordArray.join(" ") + " +" + value
+                    }).join(", ");
+                }
             }
 
             // Other Arrays
@@ -133,14 +153,18 @@ let data_description; {
                     {tag: "div", style: {textAlign: "left"}, children: [
                         damage ? title_value({title: "Damage", value: damage}) : null,
                         item.recovery ? title_value({title: "Recovery Speed", value: String(item.recovery)}) : null,
-                        item.base_armor_class ? title_value({title: "Armor Class", value: item.base_armor_class}) : null,
+                        item.base_armor_class ? title_value({title: "Base Armor Class", value: String(item.base_armor_class)}) : null,
+                        // Handle legacy bonus_armor_class for backward compatibility
+                        (item.bonus_armor_class && item.bonus_armor_class !== 0) ? title_value({title: "Bonus Armor Class", value: String(item.bonus_armor_class)}) : null,
                         weight ? title_value({title: "Weight", value: weight}) : null,
+                        bonuses ? title_value({title: "Bonuses", value: bonuses}) : null,
                         properties ? title_value({title: "Properties", value: properties}) : null,
                         conditions ? title_value({title: "Conditions", value: conditions}) : null,
                     ]},
                     item.description ? {tag: "pre", style: {color: "#aaa", textAlign: "left"}, text: item.description} : null
                 ]}
             )
+            } catch (error) {console.log(error)}
         },
 
         ability: async ({object, style=DEFAULT_STYLE}) => {
