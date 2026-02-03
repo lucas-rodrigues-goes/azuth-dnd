@@ -32,6 +32,22 @@ var Sound = class {
 
     static play (name, {volume = 1, stream = false, count = 1} = {}) {
         try {
+            const tokenNames = macro(` getTokenNames (",", '{"mapName": "Assets"}') `).split(",").sort();
+            let foundSound = false
+            for (const token of tokenNames) {
+                const [type, currentName] = token.split(":")
+                const desiredType = stream ? "stream" : "clip"
+
+                if (type == desiredType && currentName == name) {
+                    foundSound = true
+                    break
+                }
+            }
+            if (!foundSound) {
+                console.log(`No audio ${stream ? "stream" : "clip"} with name ${name} found.`)
+                return
+            }
+
             // Play Sound
             MTScript.evalMacro(`
                 [h,macro("playLocal${ stream ? "Stream" : "Clip" }All@lib:JUH.media"): json.append("",
