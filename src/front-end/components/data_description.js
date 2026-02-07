@@ -64,7 +64,7 @@ let data_description; {
                     object.description_higher_levels 
                         && {tag: "pre", style: {color: "#aaa", textAlign: "left", padding: 0, margin: 0, marginTop: "1vh"}, children: [
                             {tag: "b", style: {color: "#ddd"}, text: "At Higher Levels: "},
-                            {tag: "span", text: object.description_higher_levels || ""}
+                            {tag: "span", text: object.description_higher_levels.replace(/.nn/g, ".\n\n") || ""}
                         ]},
                 ]}
             )
