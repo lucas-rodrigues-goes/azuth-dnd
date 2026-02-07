@@ -2033,11 +2033,13 @@
 					const updateCharacter = (document.getElementById("character-switch").classList == "tab-switch active")
 					const updateInventory = (document.getElementById("inventory-switch").classList == "tab-switch active")
 					const updateSpells = (document.getElementById("spells-switch").classList == "tab-switch active")
+					const updateNotes = (document.getElementById("journal-switch").classList == "tab-switch active")
 
 					closeIfNotImpersonated()
 					if (updateCharacter) updateCharacterTab()
 					if (updateInventory) updateInventoryTab()
 					if (updateSpells) updateSpellsTab()
+					if (updateNotes) updateNotesTab()
 					} catch (e) {console.log(e)}
 				}, 1000)
 			}

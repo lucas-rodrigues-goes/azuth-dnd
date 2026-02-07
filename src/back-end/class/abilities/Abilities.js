@@ -597,6 +597,10 @@ var Abilities = class {
 
     static make_attack({slot, creature=impersonated(), target=selected(), damage_bonuses=[], hit_bonus=0, use_release_sound=true}) {
         try {
+            if (creature.id == target.id) return {
+                success: false,
+                message: `${creature.name_color} tried to attack themselves.`
+            }
             
             const weapon = database.items.data[creature.equipment[slot]?.name]
             let advantage_weight = 0

@@ -579,7 +579,7 @@ var FeatureAbilities = class extends Abilities {
         const monk_level = creature?.classes?.Monk?.level || 0
         const unarmed_die_size = [
             1, 4, 4, 4, 4, 6, 6, 6, 6, 8, 8, 8, 8, 10, 10, 10, 10, 12, 12, 12, 20
-        ][monk_level][monk_level]
+        ][monk_level]
         const heal = roll_dice(2, unarmed_die_size) + Math.max(creature.score_bonus.wisdom, 0)
         creature.receive_healing(heal)
 

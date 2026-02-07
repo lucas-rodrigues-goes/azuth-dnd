@@ -2384,15 +2384,18 @@ var Creature = class extends Entity {
 
     add_note({text="", title="", order=100}) {
         this.#notes[title] = {title, text, order}
+        this.save()
     }
 
     edit_note(key, {text="", title="", order=100}) {
         this.remove_note(key)
         this.add_note({text, title, order})
+        this.save()
     }
 
     remove_note(title) {
         delete this.#notes[title]
+        this.save()
     }
 
     //=====================================================================================================
