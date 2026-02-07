@@ -258,7 +258,7 @@ var Creature = class extends Entity {
                 case "Invisible": {
                     const invis = this.has_condition("Invisible")
                     const hidden = this.has_condition("Hidden")
-                    this.invisible = this.player ? false : (invis || hidden)
+                    this.invisible = this.player ? invis : (invis || hidden)
 
                     if (invis) this.opacity = 0.2
                     else if (hidden) this.opacity = 0.5
@@ -388,22 +388,23 @@ var Creature = class extends Entity {
         }
     }
 
-    short_rest(hours = 1) {
+    short_rest() {
         // Heal
-        const healing = (this.max_health / 4) * hours
+        const hours = 1
+        const healing = (this.max_health / 4)
         this.receive_healing(healing)
 
         // Fill resources
         for (const name in this.#resources) {
             const resource = this.#resources[name]
             
-            if (["short rest", "turn start"].includes(resource.restored_on)) {
+            if (["short rest", "turn start"].includes(resource?.restored_on?.toLowerCase())) {
                 this.set_resource_value(name, resource.max)
             }
         }
 
         // Log
-        console.log(`${this.name_color} has rested for ${hours} hours.`, "all")
+        console.log(`${this.name_color} has rested for 1 hour.`, "all")
     }
 
     long_rest() {
@@ -417,17 +418,17 @@ var Creature = class extends Entity {
         // Update Spell Slot Maximum
         this.update_spell_slots()
 
+        // Reduce Exhaustion
+        if (this.exhaustion) this.exhaustion -= 1
+
         // Fill resources
         for (const name in this.#resources) {
             const resource = this.#resources[name]
 
-            if (["long rest", "short rest", "turn start"].includes(resource.restored_on)) {
+            if (resource?.restored_on && ["long rest", "short rest", "turn start"].includes(resource?.restored_on?.toLowerCase())) {
                 this.set_resource_value(name, resource.max)
             }
         }
-
-        // Reduce Exhaustion
-        if (this.exhaustion) this.exaustion -= 1
 
         // Log
         console.log(`${this.name_color} has long rested.`, "all")
@@ -546,7 +547,7 @@ var Creature = class extends Entity {
             // Only log if this is a new higher DC than previously stored
             if (current_highest_passive_perception > highest_dc) {
                 const text = `${hidden_creature.name_color} attempted to stay hidden (${roll_text}) and succeeded (DC ${current_highest_passive_perception}).`
-                console.log(text, this.player ? "all" : "gm")
+                console.log(text, this.attitude == "friendly" ? "all" : "gm")
                 
                 // Update the highest_dc in the condition
                 this.set_condition("Hidden", -1, {
@@ -557,7 +558,7 @@ var Creature = class extends Entity {
             return true
         } else if (entering_stealth) {
             const text = `${hidden_creature.name_color} has rolled stealth (${roll_text}) and is hidden.`
-            console.log(text, this.player ? "all" : "gm")
+            console.log(text, this.attitude == "friendly" ? "all" : "gm")
             
             return true
         }
@@ -620,7 +621,7 @@ var Creature = class extends Entity {
     //=====================================================================================================
 
     get ability_scores() {
-        const ability_scores = this.#ability_scores
+        const ability_scores = {...this.#ability_scores}
         const equipment_bonuses = this.equipment_bonuses
 
         for (const score in ability_scores) {
@@ -1161,7 +1162,7 @@ var Creature = class extends Entity {
             if (
                 main_weapon &&
                 !main_weapon.properties.includes("Two-handed") && 
-                this.get_proficiency_level("Dueling") >= 0 &&
+                this.get_proficiency_level("Dueling") >= 1 &&
                 this.equipment["primary off hand"] == null
             ) equipment_bonus += 2
         }
@@ -1179,6 +1180,11 @@ var Creature = class extends Entity {
             // Barbarian Toughness
             if (this.has_feature("Barbarian Toughness")) {
                 unnarmored_bonus = Math.max(unnarmored_bonus, this.score_bonus.constitution)
+            }
+
+            // Monk Toughness
+            if (this.has_feature("Monk Toughness")) {
+                unnarmored_bonus = Math.max(unnarmored_bonus, this.score_bonus.wisdom)
             }
 
             // Mage Armor
@@ -1215,11 +1221,15 @@ var Creature = class extends Entity {
     }
 
     get speed() {
+        const monk_movement = [
+            0, 0, 10, 10, 10, 10, 15 ,15, 15, 15, 20, 20, 20, 20, 25, 25, 25, 25, 30, 30, 30
+        ][this.classes?.Monk ? this.classes?.Monk.level : 0]
+        
         // Modifiers
         const speed_modifiers = {
             features: {
                 "Barbaric Movement": { type: "add", value: 10 },
-                "Monk Movement": { type: "add", value: 10 },
+                "Monk Movement": { type: "add", value: monk_movement },
                 "Roving":  { type:"add", value: 5 },
                 "Fleet of Foot":  { type:"add", value: 5 },
                 "Bulky":  { type:"add", value: -5 },

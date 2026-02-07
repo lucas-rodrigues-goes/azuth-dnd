@@ -270,7 +270,7 @@ var Spells = class extends Abilities {
         }
         else {
             // Set spellcasting condition
-            creature.set_condition("Spellcasting", 1, {spell: {...spell, spellcasting_modifier: spellcasting_modifier}})
+            creature.set_condition("Spellcasting", -1, {spell: {...spell, spellcasting_modifier: spellcasting_modifier}})
 
             // Suspend Turn
             Initiative.suspend_turn(spell.cast_time, "Spellcasting", creature)
@@ -987,7 +987,7 @@ var Spells = class extends Abilities {
         }}).damage_type
 
         let die_amount = 1; {
-            const levels = [3, 5, 7] 
+            const levels = [5, 7, 9] 
             if (creature.spellcasting_level >= levels[0]) die_amount += 1
             if (creature.spellcasting_level >= levels[1]) die_amount += 1
             if (creature.spellcasting_level >= levels[2]) die_amount += 1
