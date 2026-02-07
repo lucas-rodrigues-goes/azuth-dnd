@@ -167,28 +167,90 @@ let data_description; {
             } catch (error) {console.log(error)}
         },
 
-        ability: async ({object, style=DEFAULT_STYLE}) => {
-            // Attributes
-            const attributes = []; {
-                attributes.push(title_value({title: "Resources", value: object.resources.length > 0 ? object.resources.join(", ") : "Free"}))
-                if (object.duration) attributes.push(title_value({title: "Duration", value: timeUnit(object.duration)}))
+        ability: async ({object, style = DEFAULT_STYLE}) => {
+            function format_resources(resources) {
+                if (!resources) return "Free";
+
+                // Old array format
+                if (Array.isArray(resources)) {
+                    return resources.length > 0 ? resources.join(", ") : "Free";
+                }
+                
+                // New object format
+                if (typeof resources === "object") {
+                    const entries = Object.entries(resources);
+                    if (entries.length === 0) return "Free";
+
+                    return entries
+                        .map(([name, amount]) =>
+                            amount > 1 ? `${amount} ${name}`: name
+                        )
+                        .join(", ");
+                }
+
+                return "Free";
             }
 
-            return element({tag: "div", style: {...DEFAULT_STYLE, ...style}, children: [
-                // Title
-                {tag: "div", style: {marginTop: "0.5vh", marginBottom: "2vh"}, children: [
-                    {tag: "div", style: {fontSize: "120%", fontWeight: "bold", margin: 0}, text: object.name},
-                    {tag: "div", style: {color: "#aaa", margin: 0, marginBottom: "1vh"}, text: (object.type || object.origin) + " Ability"},
-                ]},
 
-                // Attributes
-                {tag: "div", style: {textAlign: "left"}, children: attributes},
+            // Attributes
+            const attributes = []; {
+                attributes.push(
+                    title_value({
+                        title: "Resources",
+                        value: format_resources(object.resources)
+                    })
+                );
 
-                // Description
-                {tag: "pre", style: {color: "#aaa", textAlign: "left", padding: 0, margin: 0, marginTop: "1vh"}, 
-                    text: (object.description || await backend(`database.features.data["`+object.name+`"].description`))
-                }
-            ]})
+                if (object.duration)
+                    attributes.push(
+                        title_value({
+                            title: "Duration",
+                            value: timeUnit(object.duration)
+                        })
+                    );
+            }
+
+            return element({
+                tag: "div",
+                style: {...DEFAULT_STYLE, ...style},
+                children: [
+                    // Title
+                    {
+                        tag: "div",
+                        style: {marginTop: "0.5vh", marginBottom: "2vh"},
+                        children: [
+                            {
+                                tag: "div",
+                                style: {fontSize: "120%", fontWeight: "bold", margin: 0},
+                                text: object.name
+                            },
+                            {
+                                tag: "div",
+                                style: {color: "#aaa", margin: 0, marginBottom: "1vh"},
+                                text: (object.type || object.origin) + " Ability"
+                            }
+                        ]
+                    },
+
+                    // Attributes
+                    {tag: "div", style: {textAlign: "left"}, children: attributes},
+
+                    // Description
+                    {
+                        tag: "pre",
+                        style: {
+                            color: "#aaa",
+                            textAlign: "left",
+                            padding: 0,
+                            margin: 0,
+                            marginTop: "1vh"
+                        },
+                        text:
+                            object.description ||
+                            await backend(`database.features.data["${object.name}"].description`)
+                    }
+                ]
+            });
         },
 
         monster_ability: async ({object, style=DEFAULT_STYLE}) => {
@@ -281,41 +343,6 @@ let data_description; {
                 // Description
                 {tag: "pre", style: {color: "#aaa", textAlign: "left", padding: 0, margin: 0, marginTop: "1vh"}, 
                     text: (object.description || "")
-                }
-            ]})
-        },
-
-        ability: async ({object, style=DEFAULT_STYLE}) => {
-            // Subtitle
-            let title; {
-                title = (object.type || object.origin) + " Ability"
-            }
-
-            // Resource
-            let resource = ""; {
-                if (object.resources.length > 0) resource = object.resources.join(", ")
-                else resource = "Free"
-            }
-
-            // Attributes
-            const attributes = []; {
-                attributes.push(title_value({title: "Resource", value: resource}))
-                if (object.duration) attributes.push(title_value({title: "Duration", value: timeUnit(object.duration)}))
-            }
-
-            return element({tag: "div", style: {...DEFAULT_STYLE, ...style}, children: [
-                // Title
-                {tag: "div", style: {marginTop: "0.5vh", marginBottom: "2vh"}, children: [
-                    {tag: "div", style: {fontSize: "120%", fontWeight: "bold", margin: 0}, text: object.name},
-                    {tag: "div", style: {color: "#aaa", margin: 0, marginBottom: "1vh"}, text: title},
-                ]},
-
-                // Attributes
-                {tag: "div", style: {textAlign: "left"}, children: attributes},
-
-                // Description
-                {tag: "pre", style: {color: "#aaa", textAlign: "left", padding: 0, margin: 0, marginTop: "1vh"}, 
-                    text: (object.description || await backend(`database.features.data["`+object.name+`"].description`))
                 }
             ]})
         },

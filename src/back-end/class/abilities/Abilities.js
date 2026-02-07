@@ -31,7 +31,8 @@ var Abilities = class {
 
             // Pull from other origins
             for (const cls of [CommonAbilities, FeatureAbilities, Spells, ProficiencyAbilities]) {
-                abilities_list = {...abilities_list, ...cls.abilities_list(creature)}
+                const class_abilities_list = cls?.abilities_list?.(creature) || {}
+                abilities_list = {...abilities_list, ...class_abilities_list}
             }
 
             return abilities_list
@@ -71,138 +72,166 @@ var Abilities = class {
         } catch (error) {console.error("check_action_requirements()", error)}
     }
 
+    static normalize_resources(resources) {
+        // Array form → assume cost = 1
+        if (Array.isArray(resources)) {
+            return resources.map(name => ({ name, amount: 1 }))
+        }
+
+        // Object form → key = resource, value = amount
+        if (typeof resources === "object" && resources !== null) {
+            return Object.entries(resources).map(
+                ([name, amount]) => ({ name, amount })
+            )
+        }
+
+        return []
+    }
+
+
     static has_resources_available(resources) {
         try {
             const creature = impersonated();
             const isMonster = creature.constructor.name == "Monster"
-            
+
+            const normalized = this.normalize_resources(resources)
+            const isSpell = normalized.some(r => r.name.includes("Spell Slot"))
+
             let return_value = true;
             const missing_resources = [];
-            
-            for (const name of resources) {
+
+            for (const { name, amount } of normalized) {
                 const resource = creature?.resources[name]?.value || 0;
 
                 // Conditions
                 const isTurnResource = ["Action", "Attack Action", "Bonus Action", "Reaction", "Movement"].includes(name);
                 const hasInitiative = Initiative.turn_order.includes(creature.id);
-                const isSpell = JSON.stringify(resources).includes("Spell Slot")
 
-                // Monster Ignores Specific Resources
+                // Monster ignores specific resources
                 if (!isTurnResource && !isSpell && isMonster) continue
 
                 // Ignore turn resources if not in initiative
                 if (isTurnResource && !hasInitiative) continue;
-                
-                // Check if we can use Ready Action substitution
-                const canUseReaction = creature.has_condition("Ready Action") && (name === "Action" || name === "Attack Action") && !isSpell
-                
+
+                // Ready Action substitution
+                const canUseReaction =
+                    creature.has_condition("Ready Action") &&
+                    (name === "Action" || name === "Attack Action") &&
+                    !isSpell
+
                 switch (name) {
                     case "Attack Action": {
                         const action_res = creature?.resources["Action"]?.value || 0;
                         const reaction_res = creature?.resources["Reaction"]?.value || 0;
-                        
-                        if (resource < 1) {
-                            if (canUseReaction && reaction_res >= 1) {
-                                // Can use Reaction instead of Action
-                                continue;
-                            }
-                            if (action_res >= 1) {
-                                // Can use Action
-                                continue;
-                            }
+
+                        if (resource < amount) {
+                            if (canUseReaction && reaction_res >= amount) continue
+                            if (action_res >= amount) continue
+
                             return_value = false;
-                            missing_resources.push("Attack Action");
+                            missing_resources.push(name);
                         }
                         break;
                     }
-                    
+
                     case "Action": {
                         if (canUseReaction) {
                             const reaction_res = creature?.resources["Reaction"]?.value || 0;
-                            if (resource < 1 && reaction_res < 1) {
+                            if (resource < amount && reaction_res < amount) {
                                 return_value = false;
-                                missing_resources.push("Action");
+                                missing_resources.push(name);
                             }
-                        } else if (resource < 1) {
+                        } else if (resource < amount) {
                             return_value = false;
-                            missing_resources.push("Action");
+                            missing_resources.push(name);
                         }
                         break;
                     }
-                    
+
                     default: {
-                        if (resource < 1) {
+                        if (resource < amount) {
                             return_value = false;
                             missing_resources.push(name);
                         }
                     }
                 }
             }
-            
+
             if (!return_value) {
-                public_log(`${creature.name_color} has insufficient resources for this ability (${missing_resources.join(", ")}).`);
+                public_log(
+                    `${creature.name_color} has insufficient resources for this ability (${missing_resources.join(", ")}).`
+                );
             }
-            
+
             return return_value;
-        } catch (error) {console.error("has_resources_available()", error)}
+        } catch (error) {
+            console.error("has_resources_available()", error)
+        }
     }
+
 
     static use_resources(resources) {
         try {
             const creature = impersonated();
             const isMonster = creature.constructor.name == "Monster"
 
-            for (const name of resources) {
+            const normalized = this.normalize_resources(resources)
+            const isSpell = normalized.some(r => r.name.includes("Spell Slot"))
+
+            for (const { name, amount } of normalized) {
                 const resource = creature.resources[name];
 
                 // Conditions
                 const isTurnResource = ["Action", "Attack Action", "Bonus Action", "Reaction", "Movement"].includes(name);
                 const hasInitiative = Initiative.turn_order.includes(creature.id);
-                const isSpell = JSON.stringify(resources).includes("Spell Slot")
 
                 // Ignore turn resources if not in initiative
                 if (isTurnResource && !hasInitiative) continue;
 
-                // Monster Ignores Specific Resources
+                // Monster ignores specific resources
                 if (!isTurnResource && !isSpell && isMonster) continue
-                
-                // Check if we can use Ready Action substitution
-                const canUseReaction = creature.has_condition("Ready Action") && (name === "Action" || name === "Attack Action");
 
-                // Handle Attack Action with possible Action/Reaction substitution
-                if (name === "Attack Action" && resource.value < 1) {
-                    if (canUseReaction && creature.resources["Reaction"].value >= 1) {
-                        // Use Reaction instead of Action
-                        creature.set_resource_value("Reaction", creature.resources["Reaction"].value - 1);
+                // Ready Action substitution
+                const canUseReaction =
+                    creature.has_condition("Ready Action") &&
+                    (name === "Action" || name === "Attack Action");
+
+                // Attack Action substitution
+                if (name === "Attack Action" && resource.value < amount) {
+                    if (canUseReaction && creature.resources["Reaction"].value >= amount) {
+                        creature.set_resource_value("Reaction", creature.resources["Reaction"].value - amount);
                         creature.remove_condition("Ready Action")
-                    } else if (creature.resources["Action"].value >= 1) {
-                        // Use Action normally
-                        creature.set_resource_value("Action", creature.resources["Action"].value - 1);
+                    } else if (creature.resources["Action"].value >= amount) {
+                        creature.set_resource_value("Action", creature.resources["Action"].value - amount);
                     } else {
                         log("An error occurred when calculating resources for Attack Action");
                         continue;
                     }
-                    // Recharge attack action
-                    creature.set_resource_value("Attack Action", resource.max - 1);
+
+                    creature.set_resource_value("Attack Action", resource.max - amount);
                     continue;
                 }
 
-                // Handle Action with Ready Action substitution
-                if (name === "Action" && resource.value < 1 && canUseReaction) {
-                    creature.set_resource_value("Reaction", creature.resources["Reaction"].value - 1);
+                // Action with Ready Action substitution
+                if (name === "Action" && resource.value < amount && canUseReaction) {
+                    creature.set_resource_value("Reaction", creature.resources["Reaction"].value - amount);
                     creature.remove_condition("Ready Action")
                     creature.set_resource_value("Action", resource.max);
                 }
 
                 // Default consumption
-                if (resource.value < 1) {
-                    log(`An error occurred when calculating resources, that led an empty resource (${name}) to be spent`);
+                if (resource.value < amount) {
+                    log(`An error occurred when calculating resources, empty resource spent (${name})`);
                     continue;
                 }
-                creature.set_resource_value(name, resource.value - 1);
+
+                creature.set_resource_value(name, resource.value - amount);
             }
-        } catch (error) {console.error("use_resources()", error)}
+        } catch (error) {
+            console.error("use_resources()", error)
+        }
     }
+
 
     static damage(creature, target, result, damage_dice) {
         try {
@@ -527,7 +556,7 @@ var Abilities = class {
         } catch (error) {console.error("remove_previous()", error)}
     }
 
-    static saving_throw_result({target, difficulty_class, save_bonus, half_on_fail, advantage_weight = 0}) {
+    static saving_throw_result({target, difficulty_class, save_bonus, half_on_fail = false, advantage_weight = 0}) {
         try {
             // Advantage modifiers
             advantage_weight += 0
@@ -664,6 +693,15 @@ var Abilities = class {
             const isPlaying = hasInitiative ? Initiative.turn_order[0] == creature.id : false 
 
             { // Options
+                // Stunning Strike
+                const isMonkWeapon = weapon ? !weapon.properties.includes("Two-handed") && !weapon.properties.includes("Heavy") : true
+                const hasKi = creature.get_resource_value("Ki") >= 1
+                if (isMonkWeapon && hasKi && creature.has_feature("Stunning Strike")) fields["stunning_strike"] = {
+                    label: "Stunning Strike",
+                    value: 0,
+                    type: "check"
+                }
+
                 // Sneak Attack
                 const isDexWeapon = weapon ? weapon.properties.includes("Finesse") || weapon.properties.includes("Ammunition") : false;
                 if (
@@ -698,6 +736,22 @@ var Abilities = class {
             
             
             {// Apply bonuses
+                // Stunning Strike
+                if (response.stunning_strike == 1) {
+                    creature.reduce_resource("Ki", 1)
+
+                    const difficulty_class = 10 + creature.score_bonus.wisdom
+                    const saving_throw_score = "constitution"
+                    const save_bonus = target.saving_throws[saving_throw_score] || 0
+                    const save_result = this.saving_throw_result({creature, target, difficulty_class, save_bonus})
+                    console.log(
+                        `${creature.name_color} used stunning strike (DC ${save_result.difficulty_class}) on ${target.name_color},` + 
+                        ` who makes a ${saving_throw_score} save and ${save_result.message} (${save_result.dice_roll.text_color}).`
+                    , "all")
+
+                    if (!save_result.success) target.set_condition("Stunned", 1)
+                }
+
                 // Sneak Attack
                 if (response.sneak_attack == 1) {
                     const rogue_level = creature ? creature.classes.Rogue?.level || 1 : 1
@@ -730,6 +784,64 @@ var Abilities = class {
         } catch (error) {console.error("on_attack_hit_abilities()", error)}
     }
 
+    static calculate_weapon_attack_damage({weapon, creature=impersonated(), target=selected(), slot="", damage_bonuses=[]}={}) {
+        try {
+        const weapon_properties = weapon?.properties || []
+        const monk_level = creature?.classes?.Monk?.level || 0
+
+        const isFinesse = monk_level >= 1 || weapon_properties.includes("Finesse");
+        const isAmmo = weapon_properties.includes("Ammunition");
+        const isVersatile = weapon_properties.includes("Versatile")
+        const isOffHand = slot.includes("off hand")
+        const hasOffHand = isOffHand ? true : creature.equipment?.["primary off hand"]
+
+        // Define attack damage
+        const damage_list = []
+        if (weapon?.damage) {
+            const weapon_damage = weapon.damage.map(dmg => ({ ...dmg }));
+
+            if (isVersatile && !hasOffHand) {
+                weapon_damage[0].die_size = Number(weapon_damage[0].die_size) + 2;
+            }
+
+            damage_list.push(...weapon_damage, ...damage_bonuses);
+        } else {
+            const unarmed_die_size = [
+                1, 4, 4, 4, 4, 6, 6, 6, 6, 8, 8, 8, 8, 10, 10, 10, 10, 12, 12, 12, 20
+            ][monk_level]
+
+            damage_list.push({die_amount: 1, die_size: unarmed_die_size, damage_type: "Bludgeoning"}, ...damage_bonuses)
+        }
+
+        // Creature Conditions
+        const hasPactOfTheBlade = creature.has_feature("Pact of the Blade")
+
+        // Applicable bonuses
+        const str_bonus = creature.score_bonus["strength"];
+        const dex_bonus = Math.min(creature.score_bonus["dexterity"], 3);
+        const cha_bonus = creature.score_bonus["charisma"]
+
+        // Attribute Bonus
+        let damage_attribute_bonus = str_bonus;
+        if (!isAmmo && isFinesse) damage_attribute_bonus = Math.max(str_bonus, dex_bonus)
+        else if (isAmmo) damage_attribute_bonus = dex_bonus
+
+        // Special Cases
+        const hasTwoWeaponProf = creature.get_proficiency_level("Two-Weapon") >= 0;
+        if (isOffHand && !hasTwoWeaponProf) damage_attribute_bonus = 0;
+        else if (hasPactOfTheBlade) damage_attribute_bonus = Math.max(cha_bonus, damage_attribute_bonus);
+        
+        // Other damage modifiers
+        const damage_modifiers = this.weapon_attack_damage_modifiers({weapon, creature, target})
+
+        return {
+            damage_list,
+            damage_attribute_bonus,
+            damage_modifiers
+        }
+        } catch (error) {console.error("calculate_weapon_attack_damage()", error)}
+    }
+
     static weapon_attack_damage({weapon, creature=impersonated(), target=selected(), hit_result="hit", slot, damage_bonuses=[]}) {
         try {
             function treatLastComma(str) {
@@ -743,35 +855,7 @@ var Abilities = class {
                 );
             }
 
-            // Weapon Properties
-            const isFinesse = weapon?.properties?.includes("Finesse") || false;
-            const isAmmo = weapon?.properties?.includes("Ammunition") || false;
-            const isOffHand = slot.includes("off hand")
-            const damage_list = (weapon?.damage 
-                ? [...weapon.damage, ...damage_bonuses] 
-                : [{die_amount: 1, die_size: 1, damage_type: "Bludgeoning", damage_bonus: 0}, ...damage_bonuses]
-            )
-
-            // Creature Conditions
-            const hasPactOfTheBlade = creature.has_feature("Pact of the Blade")
-
-            // Applicable bonuses
-            const str_bonus = creature.score_bonus["strength"];
-            const dex_bonus = Math.min(creature.score_bonus["dexterity"], 3);
-            const cha_bonus = creature.score_bonus["charisma"]
-
-            // Attribute Bonus
-            let damage_attribute_bonus = str_bonus;
-            if (!isAmmo && isFinesse) damage_attribute_bonus = Math.max(str_bonus, dex_bonus)
-            else if (isAmmo) damage_attribute_bonus = dex_bonus
-
-            // Special Cases
-            const hasTwoWeaponProf = creature.get_proficiency_level("Two-Weapon") >= 0;
-            if (isOffHand && !hasTwoWeaponProf) damage_attribute_bonus = 0;
-            else if (hasPactOfTheBlade) damage_attribute_bonus = Math.max(cha_bonus, damage_attribute_bonus);
-            
-            // Other damage modifiers
-            const damage_modifiers = this.weapon_attack_damage_modifiers({weapon, creature, target})
+           const {damage_list, damage_attribute_bonus, damage_modifiers} = this.calculate_weapon_attack_damage({weapon, creature, target, slot, damage_bonuses})
 
             // Damage
             const crit_multiplier = hit_result == "lands a critical hit" ? 2 : 1;
@@ -1000,7 +1084,8 @@ var Abilities = class {
         try {
             const weapon_properties = weapon?.properties || []
 
-            const isFinesse = weapon_properties.includes("Finesse") || false;
+            const monk_level = creature?.classes?.Monk?.level || 0
+            const isFinesse = monk_level >= 1 || weapon_properties.includes("Finesse") || false;
             const isAmmo = weapon_properties.includes("Ammunition") || false;
             const hasPactOfTheBlade = creature.has_feature("Pact of the Blade")
 
@@ -1041,6 +1126,7 @@ var Abilities = class {
             // Proficiency
             const canApplyProfBonus = (
                 creature.constructor.name == "Monster" ||
+                (weapon_properties.length == 0) ||
                 (weapon_properties.includes("Mundane") && creature.get_proficiency_level("Weapon") >= 0) ||
                 (weapon_properties.includes("Simple") && creature.get_proficiency_level("Weapon") >= 1) ||
                 (weapon_properties.includes("Martial") && creature.get_proficiency_level("Weapon") >= 1)
@@ -1131,7 +1217,10 @@ var Abilities = class {
                 if (target.has_condition("Unconscious")) output += 1
 
                 // Unseen Attacker
-                if (creature.has_conditions(["Hidden", "Invisible"], "any") || target.target_visibility(creature) == 0) {
+                if (    
+                    creature.has_conditions(["Hidden", "Invisible"], "any") ||
+                    (target.target_visibility(creature) == 0 && creature.target_visibility(target) >= 0.5)
+                ) {
                     if (!view_only) {
                         creature.maintain_stealth(true)
                         target.passive_search()

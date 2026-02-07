@@ -824,26 +824,34 @@
 			}
 			async function updateInventoryTab() {
 				// Character Items
-				const character = JSON.parse(await backend(`{
-				const weapon = database.items.data?.[impersonated()?.equipment?.["primary main hand"]?.name];
-				const creature = impersonated();
-				JSON.stringify(
-					{
-						basic: {
-							"armor_class": impersonated().armor_class,
-							"initiative_mod": impersonated().initiative_mod,
-							"carry_weight": impersonated().carry_weight,
-							"score_bonus": impersonated().score_bonus,
-							"damage_modifiers":
-								Abilities.weapon_attack_damage_modifiers({weapon: weapon, creature, target: {}}) || 0,
-							"main_hand_hit_bonus":
-								Abilities.weapon_attack_hit_bonus({weapon: weapon, creature, target: {}}) || 0
-						},
-						equipment: impersonated().equipment,
-						inventory: impersonated().inventory,
-						resistances: impersonated().resistances
-					}
-				)}`))
+				const character = JSON.parse(await backend(`
+				try {
+					const weapon = database.items.data?.[impersonated()?.equipment?.["primary main hand"]?.name];
+					const offhand_weapon = database.items.data?.[impersonated()?.equipment?.["primary off hand"]?.name];
+					const creature = impersonated();
+					JSON.stringify(
+						{
+							basic: {
+								"armor_class": impersonated().armor_class,
+								"initiative_mod": impersonated().initiative_mod,
+								"carry_weight": impersonated().carry_weight,
+								"score_bonus": impersonated().score_bonus,
+								"main_hand_damage": 
+									Abilities.calculate_weapon_attack_damage({weapon: weapon}),
+								"main_hand_hit_bonus":
+									Abilities.weapon_attack_hit_bonus({weapon: weapon, creature, target: {}}) || 0,
+								"off_hand_damage": 
+									offhand_weapon ? Abilities.calculate_weapon_attack_damage({weapon: offhand_weapon, slot: "primary off hand"}) : {},
+								"off_hand_hit_bonus":
+									offhand_weapon ? Abilities.weapon_attack_hit_bonus({weapon: offhand_weapon, creature, target: {}}) : 0,
+							},
+							equipment: impersonated().equipment,
+							inventory: impersonated().inventory,
+							resistances: impersonated().resistances
+						}
+					)
+				} catch (error) {console.log(error)}`
+				))
 
 				// Cancel execution if there is no update to character
 				if (isEqualJSON(inventory_tab, character)) { return }
@@ -862,57 +870,50 @@
 					const weapons_stats = []
 
 					// Main Hand Stats
-					const main_hand = database[character.equipment["primary main hand"]?.name]
-					if (main_hand?.subtype == "weapon") {
-						const isFinesse = main_hand.properties.includes("Finesse")
-						const isAmmo = main_hand.properties.includes("Ammunition")
+					if (true) {
+						const dmg_info = character.basic.main_hand_damage
+						const damage_bonus = (Number(dmg_info.damage_modifiers) || 0) + dmg_info.damage_attribute_bonus
+						const damage_list = dmg_info.damage_list
 
-						// Damage Modifier
-						const str_bonus = character.basic.score_bonus["strength"]
-						const dex_bonus = isFinesse || isAmmo ? character.basic.score_bonus["dexterity"] : 0
-						const damage_bonus = (Math.max(str_bonus, Math.min(dex_bonus, 3)) + character.basic.damage_modifiers)
-						const hit_bonus = character.basic.main_hand_hit_bonus
-
-						// Add up weapon damages
 						let minimum = damage_bonus, maximum = damage_bonus
-						for (const damage of main_hand.damage) {
+						for (const damage of damage_list) {
 							const die_amount = Number(damage.die_amount || damage.die_ammount) || 1
 							minimum += die_amount
 							maximum += (Number(damage.die_size) || 1) * die_amount
 						}
 
+						const hit_bonus = character.basic.main_hand_hit_bonus
+						const name = character?.equipment?.["primary main hand"]?.name || "Unnarmed"
+
 						// Element
 						weapons_stats.push(
-							title_value({title: character.equipment["primary main hand"]?.name + " Damage", value: minimum + " - " + maximum}),
-							title_value({title: character.equipment["primary main hand"]?.name + " Hit Bonus", value: hit_bonus > 0 ? "+" + hit_bonus : hit_bonus})
+							title_value({title: name + " Damage", value: minimum + " - " + maximum}),
+							title_value({title: name + " Hit Bonus", value: hit_bonus > 0 ? "+" + hit_bonus : hit_bonus})
 						)
 					}
 					
 					// Off Hand Stats
 					const off_hand = database[character.equipment["primary off hand"]?.name]
 					if (off_hand?.subtype == "weapon") {
-						const isFinesse = off_hand.properties.includes("Finesse")
-						const isAmmo = off_hand.properties.includes("Ammunition")
+						const dmg_info = character.basic.off_hand_damage
+						const damage_bonus = (Number(dmg_info.damage_modifiers) || 0) + dmg_info.damage_attribute_bonus
+						const damage_list = dmg_info.damage_list
 
-						// Damage Modifier
-						const str_bonus = character.basic.score_bonus["strength"]
-						const dex_bonus = isFinesse || isAmmo ? character.basic.score_bonus["dexterity"] : 0
-						const damage_bonus = 0 + character.basic.damage_modifiers
-						const hit_bonus = Math.max(Math.min(str_bonus, 3), dex_bonus) + 2
-
-						// Add up weapon damages
 						let minimum = damage_bonus, maximum = damage_bonus
-						for (const damage of off_hand.damage) {
+						for (const damage of damage_list) {
 							const die_amount = Number(damage.die_amount || damage.die_ammount) || 1
 							minimum += die_amount
 							maximum += (Number(damage.die_size) || 1) * die_amount
 						}
 
+						const hit_bonus = character.basic.off_hand_hit_bonus
+						const name = character?.equipment?.["primary off hand"]?.name || ""
+
 						// Element
 						weapons_stats.push(
 							weapons_stats.length > 0 && {tag:"br"},
-							title_value({title: character.equipment["primary off hand"]?.name + " Damage", value: minimum + " - " + maximum}),
-							title_value({title: character.equipment["primary off hand"]?.name + " Hit Bonus", value: hit_bonus > 0 ? "+" + hit_bonus : hit_bonus})
+							title_value({title: name + " Damage", value: minimum + " - " + maximum}),
+							title_value({title: name + " Hit Bonus", value: hit_bonus > 0 ? "+" + hit_bonus : hit_bonus})
 						)
 					}
 
