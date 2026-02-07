@@ -264,7 +264,7 @@ var Events = class {
             for (const [key, resource] of Object.entries(impersonated().resources)) {
                 const { value, restored_on } = resource;
 
-                if (key === "Attack Action" && value <= 0) continue;
+                if (key === "Attack Action" && (value <= 0 || !hasInitiative)) continue;
                 if (restored_on === "turn start" && !hasInitiative) continue;
 
                 const db_res = database.resources.data[key] || {};
