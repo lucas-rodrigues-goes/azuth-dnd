@@ -27,55 +27,24 @@ var instance = function (id) {
                 //console.log(`Successfully loaded token ${token.instance.name}`, "debug")
             }
             else {
-                // Attempt to instance using class array
-                try {
-                    const parsedClass = JSON.parse(token.classes);
-                    if (Array.isArray(parsedClass) && parsedClass.length > 0) {
-                        const player_class = eval(parsedClass[0]);
-                        if (!player_class) return undefined
-                        token.instance = new player_class(id);
-                    } else {
-                        throw new Error("Not a valid class array");
-                    }
+                const parsedClass = JSON.parse(token.classes);
+                if (Array.isArray(parsedClass) && parsedClass.length > 0) {
+                    const player_class = eval(parsedClass[0]);
+                    if (!player_class) return undefined
+                    token.instance = new player_class(id);
                 }
-                // Attempt to instance by string
-                catch (e) {
-                    try {
-                        const player_class = eval(token.classes);
-                        token.instance = new player_class(id);
-                    } catch (innerError) {
-                        console.log(`Failed to instance class: ${innerError.message}`, "debug");
-                        return undefined;
-                    }
-                }
-                console.log(`Successfully updated token ${token.instance.name}`, "debug")
+                console.log(`Successfully updated token ${token.instance.name || parsedClass[0]}`, "debug")
             }
         }
 
         // No caching
         else {
-            // Attempt to instance using class array
-            try {
-                const parsedClass = JSON.parse(token.classes);
-                if (Array.isArray(parsedClass) && parsedClass.length > 0) {
-                    const player_class = eval(parsedClass[0]);
-                    token.instance = new player_class(id);
-                } else {
-                    throw new Error("Not a valid class array");
-                }
+            const parsedClass = JSON.parse(token.classes);
+            if (Array.isArray(parsedClass) && parsedClass.length > 0) {
+                const player_class = eval(parsedClass[0]);
+                token.instance = new player_class(id);
             }
-            // Attempt to instance by string
-            catch (e) {
-                try {
-                    const player_class = eval(token.classes);
-                    token.instance = new player_class(id);
-                } catch (innerError) {
-                    console.log(`Failed to instance class: ${innerError.message}`, "debug");
-                    return undefined;
-                }
-            }
-
-            console.log(`Successfully instanced token ${token.instance.name}`, "debug")
+            console.log(`Successfully instanced token ${token.instance.name || parsedClass[0]}`, "debug")
         }
 
         // Store
