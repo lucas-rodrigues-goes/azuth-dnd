@@ -416,6 +416,7 @@ var Events = class {
                 const number = {
                     Exhaustion: creature.exhaustion,
                     Stoneskin: condition.charges,
+                    "Melf's Minute Meteors": condition.charges,
                     "Small Sword Expertise": condition.consecutive_hits
                 }[name] || DEFAULT_NUMBER
 
@@ -423,6 +424,7 @@ var Events = class {
                 const description = {
                     Exhaustion: `${name} (Level ${number})`,
                     Stoneskin: `${name} (${number} charges)`,
+                    "Melf's Minute Meteors": `${name} (${number} charges)`,
                     "Small Sword Expertise": `${name} (+${number} damage)`,
                 }[name] || DEFAULT_DESCRIPTION
 

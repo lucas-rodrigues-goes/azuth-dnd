@@ -38,6 +38,19 @@ var Spells = class extends Abilities {
             }
         }
 
+        // Melf's Minute Meteors
+        if (creature.has_condition("Melf's Minute Meteors")) {
+            abilities_list.melf_minute_meteor = {
+                name: "Launch Meteor",
+                resources: ["Bonus Action"],
+                recovery: 0,
+                image: "asset://c3cfea2fb163ddf85610d25c5d226383",
+                origin: origin,
+                type: "Special",
+                description: `Launch a Meteor that deals 3d6 fire damage to all targets within a 5ft point.`
+            }
+        }
+
         // Reapply Hex
         if (creature.has_condition("Concentration")) {
             let canReapply = false; {
@@ -310,6 +323,31 @@ var Spells = class extends Abilities {
     //---------------------------------------------------------------------------------------------------
     // Special
     //---------------------------------------------------------------------------------------------------
+
+    static melf_minute_meteor () {try {
+        const creature = impersonated()
+        const condition = creature.get_condition("Melf's Minute Meteors")
+        const { spell } = condition
+
+        // Cast spell
+        Spells.play_element_sound("fire")
+        const spellcast = Spells.make_spell_save({
+            ...spell,
+            targets: allSelected(),
+            half_on_fail: true,
+            damage_dice: [{die_amount: 3, die_size: 6, damage_type: "Fire"}],
+            saving_throw_score: "Dexterity"
+        })
+
+        // Reduce condition charges
+        if (condition.charges > 1) creature.set_condition("Melf's Minute Meteors", condition.duration, {...condition, charges: condition.charges - 1})
+        else this.remove_condition("Melf's Minute Meteors")
+        console.log(`${creature.name_color} lost a charge of Melf's Minute Meteors.`, "all")
+
+        // Logging
+        if (spellcast.message) console.log(spellcast.message, "all")
+        } catch (error) {console.log(error)}
+    }
 
     static reapply_hex () {
         // Requirements
@@ -1873,6 +1911,26 @@ var Spells = class extends Abilities {
     // 3rd Level Spells
     //---------------------------------------------------------------------------------------------------
 
+    static melfs_minute_meteors (options = {}) {
+        const original_spell = {...database.spells.data["Melf's Minute Meteors"]}
+        const spell = {...original_spell, ...options}
+        const creature = impersonated()
+
+        let charges = 6; {
+            const levels = [7, 9, 11] 
+            if (creature.spellcasting_level >= levels[0]) charges += 2
+            if (creature.spellcasting_level >= levels[1]) charges += 2
+            if (creature.spellcasting_level >= levels[2]) charges += 2
+        }
+
+        creature.set_condition("Melf's Minute Meteors", TimeUnit.minutes(10), {charges, spell})
+
+        return {
+            success: true,
+            message: `${creature.name_color} cast ${spell.name}.`
+        }
+    }
+
     static animate_dead(options={}) {
         const original_spell = {...database.spells.data["Animate Dead"]}
         const spell = {...original_spell, ...options}
@@ -1897,7 +1955,7 @@ var Spells = class extends Abilities {
 
                 undead.owners = creature.owners
                 undead.attitude = creature.attitude
-                undead.set_condition("Animate Dead", 14400)
+                undead.set_condition("Animate Dead", TimeUnit.hours(24))
                 
                 console.log(
                     `${creature.name_color} cast reasserts control over ${undead.name_color}.`, 

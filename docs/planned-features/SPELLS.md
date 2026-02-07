@@ -33,8 +33,6 @@ The following spells are planned to be implemented.
 
 ### 3rd Level
 - Call Lightning
-- Counterspell
-- Melf's Minute Meteors
 - Revivify
 - Fear
 - Hypnotic Pattern
