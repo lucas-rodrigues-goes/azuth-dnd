@@ -368,7 +368,7 @@
 				// Save note button
 				async function saveNote() {
 					const title = document.getElementById("note-title").value
-					const order = Number(document.getElementById("note-order").value) || 100
+					const order = 100
 					const content = document.getElementById("note-content").value
 
 					if (newNote) await backend("impersonated().add_note({text: `"+content+"`, order: "+order+", title: `"+title+"`})")
@@ -391,8 +391,7 @@
 				
 				// Element
 				element({tag: "div", parent: journal_tab_element, attributes: {class: "input-container"}, style: {margin: 0}, children: [
-					input({id: "note-title", placeholder: "Title", options: {div: {style: {marginTop: "1vh", width: "69%"}}}}),
-					input({id: "note-order", placeholder: "Order (number)", options: {div: {style: {marginTop: "1vh", marginLeft: "1%", width: "28%"}}}}),
+					input({id: "note-title", placeholder: "Title", options: {div: {}}}),
 					{tag: "textarea",
 						attributes: {
 							id: "note-content",
@@ -416,10 +415,9 @@
 				]})
 
 				// Add information to element
-				let elements = [document.getElementById("note-title"), document.getElementById("note-order"), document.getElementById("note-content")]
+				let elements = [document.getElementById("note-title"), document.getElementById("note-content")]
 				elements[0].value = note.title || ""
-				elements[1].value = note.order || ""
-				elements[2].value = note.text || ""
+				elements[1].value = note.text || ""
 				for (const elem of elements) elem.dispatchEvent(new Event("input"))
 			}
 
