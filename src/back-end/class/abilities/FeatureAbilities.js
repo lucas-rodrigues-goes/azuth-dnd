@@ -95,6 +95,58 @@ var FeatureAbilities = class extends Abilities {
             }
         }
 
+        /* Monk */ {
+            // Unnarmed Strike
+            const weapon = database.items.data[creature.equipment["primary main hand"]?.name]
+            const monk_weapon = weapon ? !weapon.properties.includes("Two-handed") && !weapon.properties.includes("Heavy") : true
+            if (creature.has_feature("Martial Arts") && monk_weapon) abilities_list["unnarmed_strike"] = {
+                resources: ["Bonus Action"],
+                description: "Make an unnarmed strike.",
+                recovery: 2,
+                image: "asset://616cdbcc79acb453630faa8b5bc84f76",
+                type: "Attack",
+                origin: origin,
+            }
+
+            // Ki
+            if (creature.has_feature("Ki")) {
+                abilities_list["flurry_of_blows"] = {
+                    resources: ["Bonus Action", "Ki"],
+                    description: "Immediately after you take the Attack action on your turn, you can spend 1 ki point to make two unarmed strikes as a bonus action.",
+                    recovery: 2,
+                    image: "asset://1d595c7a3a9f4d9dc169556dcaaff1de",
+                    type: type,
+                    origin: origin
+                }
+                abilities_list["patient_defense"] = {
+                    resources: ["Bonus Action", "Ki"],
+                    description: "By spending a ki point, you can dodge as a bonus action.",
+                    recovery: 0,
+                    image: "asset://e14e88340c34551ba98f94aa500e0f36",
+                    type: type,
+                    origin: origin
+                }
+                abilities_list["step_of_the_wind"] = {
+                    resources: ["Bonus Action", "Ki"],
+                    description: "You can spend 1 ki point to take the Disengage or Dash action as a bonus action on your turn, and your jump distance is doubled for the turn.",
+                    recovery: 0,
+                    image: "asset://da4599c3e9967fc3e9bd769d414fbbfd",
+                    type: type,
+                    origin: origin
+                }
+            }
+
+            // Quickened Healing
+            if (creature.has_feature("Quickened Healing")) abilities_list["quickened_healing"] = {
+                resources: {"Action": 1, "Ki": 2},
+                description: "As an action, you can spend 2 ki points and roll two Martial Arts die. You regain a number of hit points equal to the number rolled plus your Wisdom modifier.",
+                recovery: 6,
+                image: "asset://0ce75c0fc93f6fb9832e83913fcc8a1a",
+                type: type,
+                origin: origin
+            }
+        }
+
         /* Wizard */ {
             // Arcane Recovery
             if (creature.has_feature("Arcane Recovery")) abilities_list["arcane_recovery"] = {
@@ -418,6 +470,125 @@ var FeatureAbilities = class extends Abilities {
         // Consume resources
         this.use_resources(action_details.resources)
         Initiative.set_recovery(action_details.recovery, creature)
+    }
+
+    //---------------------------------------------------------------------------------------------------
+    // Monk
+    //---------------------------------------------------------------------------------------------------
+
+    static unnarmed_strike() {
+        const action_name = "unnarmed_strike"
+        const slot = ""
+        const target = selected()
+
+        // Requirements
+        const { valid, creature, action_details } = this.check_action_requirements(action_name);
+        if (!valid || !target) return;
+
+        // Make attack
+        const attack_result = this.make_attack({slot, creature, target})
+        if (!attack_result.success) {
+            public_log(attack_result.message)
+            return
+        }
+
+        // Consume resources
+        this.use_resources(action_details.resources)
+        Initiative.set_recovery(action_details.recovery, creature)
+
+        // Logging
+        public_log(attack_result.message)
+    }
+
+    static flurry_of_blows() {
+        const action_name = "flurry_of_blows"
+        const slot = ""
+        const target = selected()
+
+        // Requirements
+        const { valid, creature, action_details } = this.check_action_requirements(action_name);
+        if (!valid || !target) return;
+
+        // Make attack
+        for (const i of [0, 1]) {
+            const attack_result = this.make_attack({slot, creature, target})
+            public_log(attack_result.message)
+        }
+
+        // Consume resources
+        this.use_resources(action_details.resources)
+        Initiative.set_recovery(action_details.recovery, creature)
+    }
+
+    static step_of_the_wind () {
+        // Requirements
+        const { valid, creature, action_details } = this.check_action_requirements("step_of_the_wind", false);
+        if (!valid) return;
+
+        const response = input({
+            "choice": {
+                value: "Dash,Disengage",
+                label: "Choose Action",
+                type: "radio",
+                options: {
+                    value: "string"
+                },
+            }
+        })
+        if (Object.keys(response) == 0) return;
+
+        if (response.choice == "Dash") {
+            // New movement
+            const current_movement = creature.resources["Movement"]
+            const speed = creature.speed
+            creature.set_resource_max("Movement", current_movement.max + speed)
+            creature.set_resource_value("Movement", current_movement.value + speed)
+            public_log(creature.name_color + " dashes, gaining extra movement for this round.")
+        } else {
+            creature.set_condition("Disengage", 1)
+            public_log(creature.name_color + " disengages, gaining imetamagicunity to opportunity attacks.")
+        }
+
+        // Consume resources
+        this.use_resources(action_details.resources)
+        Initiative.set_recovery(action_details.recovery, creature)
+    }
+
+    static patient_defense () {
+        // Requirements
+        const { valid, creature, action_details } = this.check_action_requirements("patient_defense", false);
+        if (!valid) return;
+
+        // Condition
+        creature.set_condition("Dodge", 1)
+
+        // Consume resources
+        this.use_resources(action_details.resources)
+        Initiative.set_recovery(action_details.recovery, creature)
+
+        // Logging
+        public_log(creature.name_color + " focuses on dodging, making it easier for them to avoid attacks.")
+    }
+
+    static quickened_healing () {
+        // Requirements
+        const { valid, creature, action_details } = this.check_action_requirements("quickened_healing", false);
+        if (!valid) return;
+
+        // Healing
+        const monk_level = creature?.classes?.Monk?.level || 0
+        const unarmed_die_size = [
+            1, 4, 4, 4, 4, 6, 6, 6, 6, 8, 8, 8, 8, 10, 10, 10, 10, 12, 12, 12, 20
+        ][monk_level][monk_level]
+        const heal = roll_dice(2, unarmed_die_size) + Math.max(creature.score_bonus.wisdom, 0)
+        creature.receive_healing(heal)
+
+        // Consume resources
+        this.use_resources(action_details.resources)
+        Initiative.set_recovery(action_details.recovery, creature)
+
+        // Logging
+        public_log(`${creature.name_color} healed themselves using quickened healing for ${heal} hit points.`)
     }
 
     //---------------------------------------------------------------------------------------------------

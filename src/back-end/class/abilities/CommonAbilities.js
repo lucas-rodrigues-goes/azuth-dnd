@@ -109,7 +109,8 @@ var CommonAbilities = class extends Abilities {
 
             // Image
             let image = ""; {
-                if (!hasWeapon) image = "asset://15d2e36a9ee7d30bdeca4d0b62572db5"
+                if (!hasWeapon && Object.keys(creature.classes || {}).includes("Monk")) image = "asset://acde5810b16d93358f26fafc6304cb1b"
+                else if (!hasWeapon) image = "asset://15d2e36a9ee7d30bdeca4d0b62572db5"
                 else if (isWeaponRanged) image = "asset://3eac5c3acef297725dbd3b0095ab9c94"
                 else if (isWeaponMelee) image = "asset://3c434b2998bc504339382ce6b11bb90b"
             }
