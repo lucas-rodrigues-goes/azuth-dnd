@@ -563,6 +563,7 @@ var Spells = class extends Abilities {
     }
 
     static lightning_streak(spell) {
+        try {
         const creature = impersonated()
 
         let die_amount = 1; {
@@ -572,39 +573,43 @@ var Spells = class extends Abilities {
             if (creature.spellcasting_level >= levels[2]) die_amount += 1
         }
 
-        const hit_targets = []
-        let current_target = selected()
-        let i = 0
-        while (i < 100) {
-            i ++
-            Spells.play_element_sound("lightning")
-            const spellattack = Spells.make_spell_attack({
-                ...spell,
-                melee_disadvantage: i == 1,
-                face_target: i == 1,
-                range: i == 1 ? spell.range : 1000,
-                target: current_target,
-                damage_dice: [{die_amount: die_amount, die_size: 4, damage_type: "Lightning", damage_bonus: spell.spellcasting_modifier}],
-            })
-            if (!spellattack.success) return spellattack
-            console.log(spellattack.message, "all")
+        Spells.play_element_sound("lightning")
+        const spellattack = Spells.make_spell_attack({
+            ...spell,
+            target: selected(),
+            damage_dice: [{die_amount: die_amount, die_size: 4, damage_type: "Lightning", damage_bonus: spell.spellcasting_modifier}],
+        })
+        if (!spellattack.success || !spellattack.hit_result.success) return spellattack
+        console.log(spellattack.message, "all")
 
-            if (!spellattack.success) break
-            else if (!spellattack.hit_result.success) break
-            else {
-                hit_targets.push(current_target.id)
-                let newTarget = false
-                for (const target of mapCreatures()) {
-                    if (hit_targets.includes(target.id)) continue
-                    if (calculate_distance(target, current_target) * 5 > 10) continue
-                    newTarget = true
-                    current_target = target
-                    break
-                }
-                if (newTarget == false) break
+        const hit_targets = []
+        let target = selected()
+        let last_target
+        while (die_amount >= 2) {
+            die_amount -= 1
+
+            hit_targets.push(target.id)
+            last_target = target
+            target = undefined
+
+            // Find next target
+            for (const creature of mapCreatures()) {
+                if (hit_targets.includes(creature.id)) continue
+                if ((calculate_distance(last_target, creature) * 5) > 10) continue
+
+                target = creature
             }
+            if (!target) break
+
+            // Deal damage and log
+            Spells.play_element_sound("lightning")
+            const damage_dice = [{die_amount, die_size: 4, damage_type: "Lightning"}]
+            console.log(
+                `${creature.name_color}'s Lightning Streak arcs from ${last_target.name_color} to ${target.name_color} dealing ${Spells.spell_damage(creature, target, "hit", damage_dice)} damage.`
+            , "all")
         }
-        return { success: true }
+        return {success: true}
+        } catch (error) {console.log(error)}
     }
 
     static eldritch_blast (options = {}) {

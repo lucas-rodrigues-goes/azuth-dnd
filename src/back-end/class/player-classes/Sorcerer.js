@@ -22,7 +22,7 @@ var Sorcerer = class extends PlayerClass {
             <br><br>
             Sorcerers rely on their Constitution score for their spellcasting. And usually have no martial training.`
     }
-    static get healthPerLevel () { return 4 }
+    static get healthPerLevel () { return 3 }
     static get spellcasting () {
         return {
             type: "full",

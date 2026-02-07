@@ -21,7 +21,7 @@ var Wizard = class extends PlayerClass {
             Wizards rely on their Intelligence score for their spells. They have few features but truly shine 
             in the variety of their spellcasting. They usually have little to no martial training.`
     }
-    static get healthPerLevel () { return 4 }
+    static get healthPerLevel () { return 3 }
     static get spellcasting () {
         return {
             type: "full",
