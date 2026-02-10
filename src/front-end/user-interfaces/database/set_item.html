@@ -33,7 +33,6 @@
 
         // Equipment only
         bonuses: {},
-        resistances: {},
 
         // Weapon Only
         damage: [],
@@ -50,7 +49,6 @@
             for (const key in itemById) item[key] = itemById[key]
 
             if (typeof item.conditions != "object") item.conditions = []
-            console.indent({itemById, item})
         } catch {}
     }
 
@@ -200,17 +198,11 @@
                 
                 const key = entry.substring(0, colonIndex).trim();
                 const value = entry.substring(colonIndex + 1).trim();
-                const numValue = Number(value);
                 
-                if (!isNaN(numValue)) {
-                    bonuses[key] = numValue;
-                } else {
-                    console.log(`Invalid number value for bonus "`+key+`": "`+value+`"`);
-                }
+                bonuses[key] = value;
             }
             
             item.bonuses = bonuses;
-            console.indent(item)
         }};
 
         // Helper function to format bonuses for display
@@ -385,15 +377,6 @@
                             }
                         }
                     }),
-                    input({id: "resistances", placeholder: "Resistances (JSON object)", options: {
-                        input: {attributes: {value: JSON.stringify(item.resistances) || "{}"}, events: {input: function (event) {
-                            try {
-                                item.resistances = JSON.parse(this.value)
-                            } catch (e) {
-                                item.resistances = {}
-                            }
-                        }}}
-                    }}),
                     input({id: "conditions", placeholder: "Conditions (comma separated)", options: {
                         input: {attributes: {value: item.conditions.join(", ") || ""}, events: updateArrayAttribute}
                     }})

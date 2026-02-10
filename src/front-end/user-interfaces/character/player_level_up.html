@@ -49,7 +49,6 @@
         const choices = { proficiencies: [], features: [], spells: [], subclass: [] }
         if (player_class) {
             const level_up_choices = JSON.parse(await backend(player_class + ".level_up_info(impersonated()).choices"))
-            console.log(level_up_choices)
             for (const type in level_up_choices) {
                 const array = level_up_choices[type]
                 for (let index = 0; index < array.length; index++) {
@@ -183,7 +182,6 @@
             if (classIsSelected) {
                 // Create Proficiencies
                 for (const {name, level} of data.level_up_info.proficiencies) {
-                    console.log(level)
                     const proficiency = data.proficiencies[name]
                     
                     const type = proficiency?.type || "None"

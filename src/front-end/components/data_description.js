@@ -8,6 +8,16 @@ let data_description; {
             ]}
         )
     }
+
+    const getRarityColor = function (rarity) {
+        return {
+            "uncommon": "#3fa34d",      // Muted green
+            "rare": "#2b6cb0",          // Desaturated blue
+            "very rare": "#6b3fa0",     // Muted purple
+            "legendary": "#c96a1b",     // Burnt orange
+            "artifcat": "#b8a35a"       // Soft gold
+        }[rarity] || ""
+    }
     
     const DEFAULT_STYLE = {padding: "0.5vh 1.5vh", fontSize: "105%", textAlign: "center", width: "100%"}
 
@@ -118,23 +128,6 @@ let data_description; {
                 }
             }
 
-            // Bonuses (new)
-            let bonuses = ""
-            if (item.bonuses && typeof item.bonuses === "object") {
-                const bonusEntries = Object.entries(item.bonuses);
-                if (bonusEntries.length > 0) {
-                    bonuses = bonusEntries.map(([key, value]) => {
-                        // Format key: set_strength -> Set Strength, armor_class -> Armor Class
-                        let wordArray = key.split("_").map(word => capitalize(word))
-                        if (wordArray[0] == "Set") {
-                            wordArray.shift()
-                            return wordArray.join(" ") + " " + value
-                        }
-                        return wordArray.join(" ") + " +" + value
-                    }).join(", ");
-                }
-            }
-
             // Other Arrays
             const properties = item.properties ? capitalize(item.properties.join(", ")) : ""
             const conditions = item.conditions ? capitalize(item.conditions.join(", ")) : ""
@@ -142,12 +135,16 @@ let data_description; {
             return element(
                 {tag: "div", style: {...DEFAULT_STYLE, ...style}, children: [
                     {tag: "div", 
-                        style: {textAlign: "center", margin: "1vh", padding: 0, position: "relative", margin: "auto", marginBottom: "2vh", width: "fit-content"}, 
+                        style: {textAlign: "center", margin: "1vh", padding: 0, position: "relative", margin: "auto", marginBottom: "3vh", width: "fit-content"}, 
                         children: [
-                            {tag: "span", style: {fontWeight: "bold", fontSize: "110%"}, text: name},
+                            {tag: "span", style: {fontWeight: "bold", fontSize: "110%", color: getRarityColor(item?.rarity)}, text: name},
                             {tag: "br"},
                             {tag: "span", style: {color: "#aaa"}, text: subtitle},
-                            {tag: "img", attributes: {src: item.image}, style: {position: "absolute", left: "-5.5vh", top: 0, height: "4vh"}}
+                            {tag: "img", attributes: {src: item.image}, style: {
+                                position: "absolute", left: "-7vh", top: "-0.7vh", height: "5vh", 
+                                backgroundColor: "#222",
+                                padding: "0.1vh", border: "0.1vh solid",
+                                borderRadius: "0.3vh", borderColor: getRarityColor(item?.rarity) || "#555"}}
                         ]
                     },
                     {tag: "div", style: {textAlign: "left"}, children: [
@@ -157,11 +154,10 @@ let data_description; {
                         // Handle legacy bonus_armor_class for backward compatibility
                         (item.bonus_armor_class && item.bonus_armor_class !== 0) ? title_value({title: "Bonus Armor Class", value: String(item.bonus_armor_class)}) : null,
                         weight ? title_value({title: "Weight", value: weight}) : null,
-                        bonuses ? title_value({title: "Bonuses", value: bonuses}) : null,
                         properties ? title_value({title: "Properties", value: properties}) : null,
                         conditions ? title_value({title: "Conditions", value: conditions}) : null,
                     ]},
-                    item.description ? {tag: "pre", style: {color: "#aaa", textAlign: "left"}, text: item.description} : null
+                    item.description ? {tag: "pre", style: {color: "#aaa", textAlign: "left", paddingRight: "2vh"}, text: item.description} : null
                 ]}
             )
             } catch (error) {console.log(error)}

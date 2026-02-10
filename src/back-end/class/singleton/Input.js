@@ -187,7 +187,6 @@ var give_items = function () {
 
             for (const target of targets) {
                 target.receive_item(itemName, Number(amount))
-                console.indent(target.inventory)
             }
         }
         
