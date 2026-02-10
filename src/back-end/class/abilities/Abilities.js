@@ -792,8 +792,13 @@ var Abilities = class {
         try {
         const weapon_properties = weapon?.properties || []
         const monk_level = creature?.classes?.Monk?.level || 0
+        const unarmed_die_size = [
+            1, 4, 4, 4, 4, 6, 6, 6, 6, 8, 8, 8, 8, 10, 10, 10, 10, 12, 12, 12, 20
+        ][monk_level]
 
-        const isFinesse = monk_level >= 1 || weapon_properties.includes("Finesse");
+        const isMonk = monk_level >= 1
+        const isMonkWeapon = weapon ? !weapon.properties.includes("Two-handed") && !weapon.properties.includes("Heavy") : true
+        const isFinesse = (isMonkWeapon && isMonk) || weapon_properties.includes("Finesse");
         const isAmmo = weapon_properties.includes("Ammunition");
         const isVersatile = weapon_properties.includes("Versatile")
         const isOffHand = slot.includes("off hand")
@@ -804,16 +809,16 @@ var Abilities = class {
         if (weapon?.damage) {
             const weapon_damage = weapon.damage.map(dmg => ({ ...dmg }));
 
+            if (isMonkWeapon && isMonk) {
+                weapon_damage[0].die_size = Math.max(Number(weapon_damage[0].die_size), unarmed_die_size)
+            }
+
             if (isVersatile && !hasOffHand) {
                 weapon_damage[0].die_size = Number(weapon_damage[0].die_size) + 2;
             }
 
             damage_list.push(...weapon_damage, ...damage_bonuses);
         } else {
-            const unarmed_die_size = [
-                1, 4, 4, 4, 4, 6, 6, 6, 6, 8, 8, 8, 8, 10, 10, 10, 10, 12, 12, 12, 20
-            ][monk_level]
-
             damage_list.push({die_amount: 1, die_size: unarmed_die_size, damage_type: "Bludgeoning"}, ...damage_bonuses)
         }
 
@@ -1254,12 +1259,12 @@ var Abilities = class {
                 }
 
                 // Favored Enemy
-                if (creature.has_feature(`Favored Enemy: ${target.type}`)) {
+                if (creature.has_feature(`Favored Enemy: ${target?.type}`)) {
                     output += creature.score_bonus.wisdom
                 }
 
                 // Small Sword Proficiency
-                const targetHasLightArmor = ["None", "Light"].includes(target.armor_type)
+                const targetHasLightArmor = ["None", "Light"].includes(target?.armor_type)
                 if (weapon_properties.includes("Small Sword") && creature.get_proficiency_level("Small Sword") >= 0 && targetHasLightArmor) {
                     output += creature.score_bonus.dexterity
                 }
@@ -1267,7 +1272,7 @@ var Abilities = class {
                 // Small Sword Expertise
                 if (creature.has_condition("Small Sword Expertise")) {
                     const condition = creature.get_condition("Small Sword Expertise")
-                    if (!weapon_properties.includes("Small Sword") || condition.target != target.id) {
+                    if (!weapon_properties.includes("Small Sword") || condition.target != target?.id) {
                         creature.remove_condition("Small Sword Expertise")
                     } else {
                         output += condition.consecutive_hits
