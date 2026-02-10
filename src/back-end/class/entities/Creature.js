@@ -1053,8 +1053,20 @@ var Creature = class extends Entity {
             const itemData = this.equipment[slot];
             if (itemData) {
                 const item = database.items.data[itemData.name];
-                if (item && item.resistances) {
-                    applyResistancesOfObject(item.resistances);
+                if (item && item.bonuses) {
+                    const resistObject = {}
+                    for (const [key, value] of Object.entries(item.bonuses)) {
+                        if (!resistances[key]) continue
+                        const isResistance = !isNaN(Number(value))
+
+                        if (isResistance) resistObject[key] = {
+                            type: "resistance", reduction: value
+                        }
+                        else resistObject[key] = {
+                            type: value
+                        }
+                    }
+                    applyResistancesOfObject(resistObject);
                 }
             }
         }
@@ -2024,6 +2036,7 @@ var Creature = class extends Entity {
 
     set inventory (inventory) {
         this.#inventory = inventory
+        this.save()
     }
 
     get equipment() {
@@ -2032,6 +2045,7 @@ var Creature = class extends Entity {
 
     set equipment(equipment) {
         this.#equipment = equipment
+        this.save()
     }
 
     switch_weapon_sets() {
