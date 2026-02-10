@@ -87,12 +87,10 @@ var data = class {
             rarity="common",
             price=0,
             max_stack=20,
-            stackable=true,
             properties=[],
 
             // Equipment-only
-            bonuses = {},
-            resistances={},
+            bonuses={},
             conditions=[],
 
             // Weapon-only
@@ -121,9 +119,7 @@ var data = class {
             }
 
             // Stackable
-            if (max_stack == 1 || type == "equipment") {
-                stackable = false
-            }
+            let stackable = max_stack > 1
 
             // Object
             let object = { name, type, description, image, weight, rarity, price, stackable, max_stack, properties, cls }; {
