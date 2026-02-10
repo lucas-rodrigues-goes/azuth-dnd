@@ -3,7 +3,8 @@
 var Events = class {
 
         static #cache = {
-            impersonated
+            impersonated: undefined,
+            impersonatedData: undefined
         }
 
         //=====================================================================================================
@@ -14,11 +15,11 @@ var Events = class {
             if (impersonated()) macro(`exposeFOW(getCurrentMapName(), getImpersonated())`)
 
             this.updateAll()
+            this.updateSpellsTab()
         } catch (error) {console.error("Events.every1000ms()", error)} }
 
         static every5000ms () { try {
             if (isGM && !settings.visionMemory) macro(`exposePCOnlyArea()`)
-
         } catch (error) {console.error("Events.every5000ms()", error)} }
 
         //=====================================================================================================
@@ -32,11 +33,17 @@ var Events = class {
             else this.#cache.impersonated = id
 
             this.updateAll()
+            this.updateCharacterSheet()
         } catch (error) {console.error("Events.onChangeImpersonated()", error)} }
 
         // Avoid using as much as possible, really heavy.
         static onChangeImpersonatedData () { try {
+            const current_impersonated_data = impersonated().token.getProperty("object")
+            if (this.#cache.impersonatedData == current_impersonated_data) return
+            this.#cache.impersonatedData = current_impersonated_data
+
             this.updateResources()
+            this.updateCharacterSheet()
         } catch (error) {console.error("Events.onChangeImpersonatedData()", error)} }
 
         static onMouseOver ({args}) { try {
@@ -89,13 +96,13 @@ var Events = class {
 
             const jsonString = JSON.stringify(args)
             macro(`runJSfunction("${name}", "${type}", "${functionName}", "null", '${jsonString.replace(/'/g, "`")}')`)
-        } catch (error) {console.error("Events.runJSfunction()", error)} }
+        } catch (error) {console.error("Events.runJSfunction()", error + (functionName))} }
 
         // Runs for all players
         static runJSfunctionAll = ({name, type="Overlay", functionName, args=[], targets="all"}) => { try {
             const runJSArgs = [name, type, functionName, "null", args]
             macro(`execFunction("runJSfunction", '${JSON.stringify(runJSArgs)}', ${0}, "${targets}")`)
-        } catch (error) {console.error("Events.runJSfunctionAll()", error)} }
+        } catch (error) {console.error("Events.runJSfunctionAll()", error + (functionName))} }
 
         //=====================================================================================================
         // Screen Updates
@@ -112,6 +119,112 @@ var Events = class {
             this.updateOwnedCharacterPortraits()
             this.updateInitiativeCreatures()
             this.updateTarget()
+        }
+
+        // Character Sheet
+        static updateCharacterSheet() {
+            if (!impersonated()) return
+            this.updateInventoryTab()
+            this.updateCharacterTab()
+            this.updateNotesTab()
+        }
+        static updateCharacterTab() {
+            try {
+            if (!impersonated()) return
+            const character = {
+                basic: {
+                    name: impersonated().name,
+                    portrait: impersonated().portrait || impersonated().image,
+                    level: impersonated().level,
+                    experience: impersonated().experience,
+                    level_up_experience: impersonated().level_up_experience || 0,
+                    classes: impersonated().classes,
+                    ability_scores: impersonated().ability_scores,
+                    // Monster
+                    challenge_rating: impersonated().challenge_rating,
+                    exp: impersonated().exp
+                },
+                info: {
+                    "Race": impersonated().race,
+                    "Size": impersonated().size,
+                    "Type": impersonated().type,
+                    " ":" ",
+                    "Health": impersonated().health + " / " + impersonated().max_health,
+                    "Armor Class": impersonated().armor_class,
+                    "Initiative Penalty": impersonated().initiative_mod,
+                    "Passive Perception": impersonated().passive_perception,
+                    "Walking Speed": impersonated().speed + "ft",
+                },
+                skills: impersonated().skills,
+                saving_throws: impersonated().saving_throws,
+                conditions: impersonated().conditions,
+                remaining_condition_durations: impersonated().get_all_remaining_durations(),
+                features: impersonated().features,
+                proficiencies: impersonated().proficiencies
+            }
+            Events.runJSfunction({
+                name: "Character",
+                type: "Dialog",
+                functionName: "updateCharacterTab",
+                args: [character]
+            })
+            } catch (error) {console.log(error)}
+        }
+        static updateInventoryTab() {
+            try {
+            if (!impersonated()) return
+            const weapon = database.items.data?.[impersonated()?.equipment?.["primary main hand"]?.name];
+            const offhand_weapon = database.items.data?.[impersonated()?.equipment?.["primary off hand"]?.name];
+            const creature = impersonated();
+
+            const character = {
+                basic: {
+                    "armor_class": impersonated().armor_class,
+                    "initiative_mod": impersonated().initiative_mod,
+                    "carry_weight": impersonated().carry_weight,
+                    "score_bonus": impersonated().score_bonus,
+                    "main_hand_damage": 
+                        Abilities.calculate_weapon_attack_damage({weapon: weapon}),
+                    "main_hand_hit_bonus":
+                        Abilities.weapon_attack_hit_bonus({weapon: weapon, creature, target: {}}) || 0,
+                    "off_hand_damage":
+                        offhand_weapon ? Abilities.calculate_weapon_attack_damage({weapon: offhand_weapon, slot: "primary off hand"}) : {},
+                    "off_hand_hit_bonus":
+                        offhand_weapon ? Abilities.weapon_attack_hit_bonus({weapon: offhand_weapon, creature, target: {}}) : 0,
+                },
+                equipment: impersonated().equipment,
+                inventory: impersonated().inventory,
+                resistances: impersonated().resistances
+            }
+            Events.runJSfunction({
+                name: "Character",
+                type: "Dialog",
+                functionName: "updateInventoryTab",
+                args: [character, database.items.data]
+            })
+            } catch (error) {console.log(error)}
+        }
+        static updateSpellsTab() {
+            try {
+            if (!impersonated()) return
+            Events.runJSfunction({
+                name: "Character",
+                type: "Dialog",
+                functionName: "updateSpellsTab",
+                args: []
+            })
+            } catch (error) {console.log(error)}
+        }
+        static updateNotesTab() {
+            try {
+            if (!impersonated()) return
+            Events.runJSfunction({
+                name: "Character",
+                type: "Dialog",
+                functionName: "updateNotesTab",
+                args: []
+            })
+            } catch (error) {console.log(error)}
         }
 
         // Abilities Bar

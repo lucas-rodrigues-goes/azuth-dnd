@@ -142,6 +142,15 @@
 			// Helper functions
 			//=====================================================================================================
 
+			function getRarityColor(rarity) {
+				return {
+					"uncommon": "#3fa34d",      // Muted green
+					"rare": "#2b6cb0",          // Desaturated blue
+					"very rare": "#6b3fa0",     // Muted purple
+					"legendary": "#c96a1b",     // Burnt orange
+					"artifcat": "#b8a35a"       // Soft gold
+				}[rarity] || ""
+			}
 			function warning({parent, text}) {
 				modal({parent: parent, children: [
 					{tag: "p", style: {textAlign: "center", fontWeight: "bold", fontSize: "110%", marginTop: "0.5vh"}, text: "Warning"},
@@ -270,7 +279,7 @@
 					//` impersonated().move_item("`+initialPosition+`", "`+finalPosition+`") `
 
 					await backend(request)
-					updateInventoryTab()
+					//updateInventoryTab()
 
 					// Reset draggedElement visibility without moving it
 					//draggedElement.style.visibility = "hidden";
@@ -429,41 +438,13 @@
 				basic: {}, info: {}, skills: {}, saving_throws: {}, 
 				conditions: {}, remaining_condition_durations: {}, features: {}, proficiencies: {}, resistances: {}
 			}
-			async function updateCharacterTab() {
+			async function updateCharacterTab(character) {
+				//console.log("Running updateCharacterTab")
 				// Character
-				const character = JSON.parse(await backend(`JSON.stringify(
-					{
-						basic: {
-							name: impersonated().name,
-							portrait: impersonated().portrait || impersonated().image,
-							level: impersonated().level,
-							experience: impersonated().experience,
-							level_up_experience: impersonated().level_up_experience || 0,
-							classes: impersonated().classes,
-							ability_scores: impersonated().ability_scores,
-							// Monster
-							challenge_rating: impersonated().challenge_rating,
-							exp: impersonated().exp
-						},
-						info: {
-							"Race": impersonated().race,
-							"Size": impersonated().size,
-							"Type": impersonated().type,
-							" ":" ",
-							"Health": impersonated().health + " / " + impersonated().max_health,
-							"Armor Class": impersonated().armor_class,
-							"Initiative Penalty": impersonated().initiative_mod,
-							"Passive Perception": impersonated().passive_perception,
-							"Walking Speed": impersonated().speed + "ft",
-						},
-						skills: impersonated().skills,
-						saving_throws: impersonated().saving_throws,
-						conditions: impersonated().conditions,
-						remaining_condition_durations: impersonated().get_all_remaining_durations(),
-						features: impersonated().features,
-						proficiencies: impersonated().proficiencies
-					}
-				)`))
+				if (!character) {
+					backend(`Events.updateCharacterTab()`)
+					return
+				}
 
 				// Cancel execution if there is no update to character
 				if (isEqualJSON(character_tab, character)) { return }
@@ -820,42 +801,16 @@
 				inventory: [],
 				resistances: {},
 			}
-			async function updateInventoryTab() {
+			async function updateInventoryTab(character, database) {
+				//console.log("Running updateInventoryTab")
 				// Character Items
-				const character = JSON.parse(await backend(`
-				try {
-					const weapon = database.items.data?.[impersonated()?.equipment?.["primary main hand"]?.name];
-					const offhand_weapon = database.items.data?.[impersonated()?.equipment?.["primary off hand"]?.name];
-					const creature = impersonated();
-					JSON.stringify(
-						{
-							basic: {
-								"armor_class": impersonated().armor_class,
-								"initiative_mod": impersonated().initiative_mod,
-								"carry_weight": impersonated().carry_weight,
-								"score_bonus": impersonated().score_bonus,
-								"main_hand_damage": 
-									Abilities.calculate_weapon_attack_damage({weapon: weapon}),
-								"main_hand_hit_bonus":
-									Abilities.weapon_attack_hit_bonus({weapon: weapon, creature, target: {}}) || 0,
-								"off_hand_damage": 
-									offhand_weapon ? Abilities.calculate_weapon_attack_damage({weapon: offhand_weapon, slot: "primary off hand"}) : {},
-								"off_hand_hit_bonus":
-									offhand_weapon ? Abilities.weapon_attack_hit_bonus({weapon: offhand_weapon, creature, target: {}}) : 0,
-							},
-							equipment: impersonated().equipment,
-							inventory: impersonated().inventory,
-							resistances: impersonated().resistances
-						}
-					)
-				} catch (error) {console.log(error)}`
-				))
+				if (!character || !database) {
+					backend(`Events.updateInventoryTab()`)
+					return
+				}
 
 				// Cancel execution if there is no update to character
 				if (isEqualJSON(inventory_tab, character)) { return }
-
-				// Database
-				const database = JSON.parse(await backend(`database.items.data`))
 
 				// Basic Attributes
 				function updateBasicAttributes() {
@@ -988,6 +943,7 @@
 						// Item element creation
 						let image = null, amount = null
 						if (item) { // --> Slot contains item
+
 							// Tooltip
 							const name = slot.amount > 1 ? slot.amount + " " + item.name + "s" : item.name
 							const weight = " (" + Math.round(item.weight * slot.amount * 100) / 100 + "lb)"
@@ -1048,7 +1004,7 @@
 						// Slot
 						if (position) {
 							// Reduce opacity on secondary weapon set
-							const style = position.includes("secondary") ? {opacity: 0.7, border: "none", padding: "0.2vh"} : {}
+							const style = 
 
 							// Element
 							equipment.appendChild(
@@ -1057,7 +1013,10 @@
 										class: "inventory-slot item-tooltip-trigger",
 										position: position
 									},
-									style: style,
+									style: {
+										opacity: position.includes("secondary") ? 0.3 : 1, 
+										borderColor: getRarityColor(item?.rarity),
+									},
 									events: {dragover, drop},
 									children: [image, amount]
 								}
@@ -1123,6 +1082,7 @@
 									class: "inventory-slot item-tooltip-trigger",
 									position: position
 								},
+								style: {borderColor: getRarityColor(item?.rarity)},
 								events: {dragover, drop},
 								children: [image, amount]
 							}
@@ -1179,228 +1139,6 @@
 				updateResistances()
 			}
 
-			let abilities_tab = {
-				classes: {},
-				resources: {},
-				abilities: {},
-				hasInitiative: false,
-			}
-			async function updateAbilitiesTab() {
-				// Helpers
-				function getMainClass(classObj) {
-					let highestLevel = -Infinity;
-					let highestClass = null;
-
-					for (const [className, class_info] of Object.entries(classObj)) {
-						if (class_info.level > highestLevel) {
-							highestLevel = class_info.level;
-							highestClass = className;
-						}
-					}
-
-					return highestClass;
-				}
-				function orderByRestoredOn(obj) {
-					const priority = {
-						"": -1, // for undefined or missing
-						"turn start": 0,
-						"short rest": 1,
-						"long rest": 2,
-					};
-
-					return Object.keys(obj).sort((a, b) => {
-						let a_priority = priority[obj[a].restored_on || ""]
-						let b_priority = priority[obj[b].restored_on || ""]
-
-						if(a.includes("Spell Slot")) a_priority = 3
-						if(b.includes("Spell Slot")) b_priority = 3
-
-						return a_priority - b_priority;
-					});
-				}
-
-				// Character Attributes
-				const character = JSON.parse(await backend(`JSON.stringify(
-					{
-						classes: impersonated().classes || {},
-						resources: impersonated().resources || {},
-						hasInitiative: Initiative.turn_order.includes(impersonated().id)
-					}
-				)`))
-
-				// Character Classes Request
-				let classes_actions_list = ""
-				for (const item of Object.keys(character.classes)) {
-					classes_actions_list += "..." + item + ".actions_list(),"
-				}
-
-				// Character Classes
-				character["abilities"] = JSON.parse(await backend(`JSON.stringify({
-					...Common.actions_list(),
-					`+classes_actions_list+`
-				})`))
-
-				// Cancel execution if there is no update to character
-				if (isEqualJSON(abilities_tab, character)) return
-
-				// Database
-				const database = JSON.parse(await backend(`JSON.stringify({
-					spells: database.spells.data,
-					resources: database.resources.data,
-				})`))
-
-				// Update Abilities
-				let previous_type = undefined
-				async function updateAbilities() {
-					// Clear container
-					const abilities_container = document.getElementById("abilities-tab-abilities")
-					abilities_container.clearChildren()
-
-					// Create ability elements
-					for (const name in character.abilities) {
-						const ability = character.abilities[name]
-						const show_name = ability.name || capitalizeAll(name.replaceAll("_", " "))
-
-						// Add spacing between levels
-						const type = ability.origin == "Common" ? "Common Abilities" : "Class Abilities"
-						if (previous_type != type) {
-							abilities_container.appendChild({tag: "div", style: {margin: "1.3vh", marginTop: "2vh", padding: 0, fontWeight: "bold"}, text: type})
-							previous_type = type
-						}
-
-						// Resources Element
-						const resources = []
-						let i = 0
-						for (const resource of ability.resources) {
-							if (i < (ability.resources.length) && i != 0) resources.push({tag: "span", text: ", "})
-							resources.push({tag: "img", style: {position: "relative", bottom: "0.2vh", margin: "0 0.3vh"}, attributes: {src: database?.resources[resource]?.image || ""}})
-							resources.push({tag: "span", text: resource})
-							i++
-						}
-
-						// Add element
-						abilities_container.appendChild(
-							{tag: "div", 
-								attributes: {class: "collapsible-div"}, 
-								style: {
-									display: "flex", gap: "1vh", padding: "0.5vh", marginTop: "1vh",
-								},
-								events: {
-									mousedown: (event) => {
-										if (event.button != 2) return
-										const buttons = {
-											"Use": () => backend(ability.origin + `.` + name + `()`),
-											"Description": async () => modal({parent: document.getElementById("abilities-tab"), children: [
-												await data_description.ability({object: {...ability, name: show_name}})
-											]}),
-										}
-
-										// Run context menu
-										context_menu({event: event, buttons: buttons})			
-									}
-								},
-								children: [
-									{tag: "img", attributes: {src: ability.image || ""}},
-									{tag: "span", text: show_name},
-									{tag: "div", style: {position: "absolute", right: "0.5vh", padding: 0, margin: 0}, children: resources},
-								]
-							}
-						)
-					}
-				}
-				updateAbilities()
-
-				// Update Resources
-				async function updateResources() {
-					if (isEqualJSON(abilities_tab.resources, character.resources) && 
-						isEqualJSON(abilities_tab.hasInitiative, character.hasInitiative)) return
-
-					// Clear container
-					const resources_container = document.getElementById("abilities-tab-resources")
-					resources_container.clearChildren()
-
-					// Create elements
-					let previous_restored_on = undefined
-					for (const name of orderByRestoredOn(character.resources)) {
-						const resource = character.resources[name]
-						const resource_data = database.resources[name] || {}
-						const color = {color: resource_data.color || ""}
-
-						// Validation
-						if(name == "Attack Action" && resource.value <= 0) continue
-						if(name.includes("Level Spell Slot")) continue
-						if(resource.restored_on == "turn start" && !character.hasInitiative) continue
-
-						// Add spacing between resource types
-						const restored_on = resource?.restored_on || ""
-						const text = restored_on != "" ? "" + capitalizeAll(restored_on) : "Other"
-						if (previous_restored_on != restored_on) {
-							resources_container.appendChild({tag: "div", style: {margin: "1.3vh", marginTop: "2vh", padding: 0, fontWeight: "bold"}, text: text})
-							previous_restored_on = restored_on
-						}
-
-						// Add element
-						resources_container.appendChildren([
-							{tag: "div", 
-								attributes: {class: "collapsible-div"}, 
-								style: {
-									display: "flex", gap: "1vh", padding: "0.5vh", marginTop: "1vh",
-									opacity: resource.value > 0 ? 1 : 0.4
-								},
-								events: {
-									mousedown: (event) => { 
-										if (event.button != 2) return
-										const buttons = {}
-										const isGM = '+isGM()+' == 1
-										const key = name
-										
-										// Context Buttons
-										if(isGM) buttons["Restore All"] = async () => {
-											await backend(`impersonated().set_resource_value("`+ key +`", `+ resource.max +`)`); updateResources()
-										}
-										if(isGM && name != "Movement") buttons["Increase"] = async () => {
-											await backend(`impersonated().set_resource_value("`+ key +`", `+ (resource.value + 1) +`)`); updateResources()
-										}
-										if(resource.value > 0  && name != "Movement") buttons["Reduce"] = async () => {
-											await backend(`impersonated().use_resource("`+key+`")`); updateResources()
-										}
-
-										// For Movement Resource
-										if(isGM && name == "Movement") buttons["Increase 5ft"] = async () => {
-											await backend(`impersonated().set_resource_value("`+ key +`", `+ (resource.value + 5) +`)`); updateResources()
-										}
-										if(resource.value > 0  && name == "Movement") buttons["Reduce 5ft"] = async () => {
-											await backend(`impersonated().set_resource_value("`+key+`", `+ (resource.value - 5) +`)`); updateResources()
-										}
-										
-										// Description
-										if(!isEqualJSON(resource_data, {})) buttons["Description"] = async () => modal({parent: document.getElementById("abilities-tab"), children: [
-											await data_description.resource({object: resource_data})
-										]})
-
-										// Run context menu
-										context_menu({event: event, buttons: buttons})
-									}
-								},
-								children: [
-									{tag: "img", attributes: {src: resource_data.image}},
-									{tag: "span", text: name},
-									{tag: "span", style: {position: "absolute", right: "0.5vh"}, children: [
-										{tag: "span", style: color, text: resource.value},
-										{tag: "span", text: " / "},
-										{tag: "span", style: color, text: resource.max},
-									]}
-								]
-							}
-						])
-					}
-				}
-				updateResources()
-
-				// Cashing
-				abilities_tab = character
-			}
-
 			let spells_tab = {
 				classes: {},
 				spells: {},
@@ -1410,6 +1148,7 @@
 				score_bonus: {},
 			}
 			async function updateSpellsTab() {
+				//console.log("Running updateSpellsTab")
 				const chosen_class = document.getElementById("spells-tab-class").value || "None"
 				const spells_switch = document.getElementById("spells-switch")
 
@@ -1762,7 +1501,8 @@
 				character_notes: []
 			}
 			async function updateNotesTab() {
-				const character_notes = JSON.parse(await backend("impersonated().notes"))
+				//console.log("Running updateNotesTab")
+				const character_notes = JSON.parse(await backend(`impersonated().notes`))
 				const notes_list_element = document.getElementById("journal-tab-notes-list")
 
 				if (isEqualJSON(character_notes, notes_tab.character_notes)) return
@@ -1798,6 +1538,9 @@
 							],
 						}
 					)
+					
+					const journal_tab_element = document.getElementById("journal-tab-note")
+					journal_tab_element.clearChildren()
 				}
 			}
 
@@ -2024,22 +1767,6 @@
 				updateCharacterTab()
 				updateSpellsTab()
 				updateNotesTab()
-
-				// Set update intervals
-				setInterval(()=> {
-					try {
-					const updateCharacter = (document.getElementById("character-switch").classList == "tab-switch active")
-					const updateInventory = (document.getElementById("inventory-switch").classList == "tab-switch active")
-					const updateSpells = (document.getElementById("spells-switch").classList == "tab-switch active")
-					const updateNotes = (document.getElementById("journal-switch").classList == "tab-switch active")
-
-					closeIfNotImpersonated()
-					if (updateCharacter) updateCharacterTab()
-					if (updateInventory) updateInventoryTab()
-					if (updateSpells) updateSpellsTab()
-					if (updateNotes) updateNotesTab()
-					} catch (e) {console.log(e)}
-				}, 1000)
 			}
 
 			window.onload = function () {

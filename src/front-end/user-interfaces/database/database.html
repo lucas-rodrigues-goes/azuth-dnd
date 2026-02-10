@@ -481,8 +481,18 @@
                         pre({content:description})
                     )
 
+                    const getRarityColor = function (rarity) {
+                        return {
+                            "uncommon": "#3fa34d",      // Muted green
+                            "rare": "#2b6cb0",          // Desaturated blue
+                            "very rare": "#6b3fa0",     // Muted purple
+                            "legendary": "#c96a1b",     // Burnt orange
+                            "artifcat": "#b8a35a"       // Soft gold
+                        }[rarity] || "#555"
+                    }
+
                     columns = [
-                        img({src:image, style:"height:2.4vh"}), 
+                        img({src:image, style:"height:4vh; background-color: #222; border-radius: 0.5vh; border: 1px solid "+getRarityColor(item?.rarity)+"; padding: 0.2vh"}), 
                         name, 
                         capitalizeAll(type),
                         capitalizeAll(subtype),
@@ -495,7 +505,7 @@
                         id:"items-table-row-"+name, 
                         columns, 
                         content:description, 
-                        config:"3vh 1fr 1fr 1fr 1fr min-content"
+                        config:"5vh 1fr 1fr 1fr 1fr min-content"
                     })
                 }
 
