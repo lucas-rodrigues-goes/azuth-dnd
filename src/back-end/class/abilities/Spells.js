@@ -324,10 +324,12 @@ var Spells = class extends Abilities {
     // Special
     //---------------------------------------------------------------------------------------------------
 
-    static melf_minute_meteor () {try {
+    static melf_minute_meteor () {
         const creature = impersonated()
         const condition = creature.get_condition("Melf's Minute Meteors")
         const { spell } = condition
+        const { valid, action_details } = this.check_action_requirements("melf_minute_meteor", false);
+        if (!valid) return
 
         // Cast spell
         Spells.play_element_sound("fire")
@@ -346,7 +348,10 @@ var Spells = class extends Abilities {
 
         // Logging
         if (spellcast.message) console.log(spellcast.message, "all")
-        } catch (error) {console.log(error)}
+
+        // Consume resources
+        this.use_resources(action_details.resources)
+        Initiative.set_recovery(action_details.recovery, creature)
     }
 
     static reapply_hex () {
