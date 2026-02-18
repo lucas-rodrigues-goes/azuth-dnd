@@ -152,6 +152,16 @@ var mapTeleporters = function (map_name) {
     return entities
 }
 
+var mapDifficultTerrain = function (map_name) {
+    const entities = []
+    const tokens = map_name ? MapTool.tokens.getMapTokens(map_name) : MapTool.tokens.getMapTokens()
+    for (const token of tokens) {
+        const entity = instance(token.getId())
+        if (entity instanceof DifficultTerrain) entities.push(entity)
+    }
+    return entities
+}
+
 // Find Token ID
 var getTokenID = function (name, map_name = "") {
     const tokens = MapTool.tokens.getMapTokens(map_name);

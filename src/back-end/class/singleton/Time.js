@@ -59,7 +59,7 @@ var Time = class {
     //-----------------------------------------------------------------------------------------------------
 
     // Check all creature conditions for expiration
-    static check_all_creature_conditions({daytime=undefined}={}) {
+    static check_all_conditions({daytime=undefined}={}) {
         try {
             const creatures = mapCreatures();
             let total_expired = 0;
@@ -76,6 +76,10 @@ var Time = class {
                 
                 const had_expired = creature.check_expired_conditions()
                 if (had_expired) total_expired++;
+            }
+
+            for (const dt of mapDifficultTerrain()) {
+                dt.check_expired_rerolls()
             }
             
             if (total_expired > 0) {
@@ -97,7 +101,7 @@ var Time = class {
 
         // No change to lightning
         if (old_daytime == daytime) {
-            this.check_all_creature_conditions()
+            this.check_all_conditions()
             return
         }
 
@@ -131,7 +135,7 @@ var Time = class {
 
         // Return to current map
         await MTScript.evalMacro(`[r:setCurrentMap("${current_map}")]`)
-        this.check_all_creature_conditions({daytime: current_map_vision})
+        this.check_all_conditions({daytime: current_map_vision})
     }
 
     // Helpers
