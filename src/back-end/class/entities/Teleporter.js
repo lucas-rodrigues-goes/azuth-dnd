@@ -71,7 +71,7 @@ var Teleporter = class extends Entity {
         const object = {};
 
         this.token.setProperty("object", JSON.stringify(object));
-        this.token.setProperty("class", JSON.stringify(["Creature", "Entity"]));
+        this.token.setProperty("class", JSON.stringify(["Teleporter", "Entity"]));
 
         return object;
     }

@@ -1170,8 +1170,6 @@ var Database = class extends Entity {
         this.#features = object.features
         this.#spells = object.spells;
         this.#items = object.items;
-
-        this.token.setProperty("class", "Database");
     }
 
     save() {
