@@ -431,9 +431,11 @@ var Spells = class extends Abilities {
             if (settings.gridMovement) {
                 const direction = calculate_direction(target, creature)
                 target.move(direction, pull_cells)
+                target.onMove()
             } else {
                 const angle = calculate_direction_angle(target, creature)
                 target.move_angle(angle, pull_cells)
+                target.onMove()
             }
         }
 
@@ -1784,7 +1786,7 @@ var Spells = class extends Abilities {
         // Validate
         coordinates.x = coordinates.x * settings.cellSize
         coordinates.y = coordinates.y * settings.cellSize
-        const distance = calculate_distance(creature, coordinates)
+        const distance = calculate_distance(creature, coordinates) * 5
 
         if (distance <= spell.range) {
             creature.x = Number(coordinates.x)
@@ -1795,6 +1797,7 @@ var Spells = class extends Abilities {
             message: `Maximum distance for misty step is ${spell.range}ft, attempted ${distance}ft`
         }
 
+        creature.onMove()
         return {
             success: true,
             message: `${creature.name_color} cast ${spell.name} teleporting ${distance}ft.`
@@ -2133,14 +2136,14 @@ var Spells = class extends Abilities {
             bonus_armor_class: 2
         })
 
-        // Add action and movement if target is self
+        /* // Add action and movement if target is self
         if (target.id == creature.id) {
             creature.set_resource_max("Action", 2)
             creature.set_resource_value("Action", creature.resources["Action"].value + 1)
 
             creature.set_resource_max("Movement", creature.speed)
             creature.set_resource_value("Movement", creature.resources["Movement"].value + creature.speed/2)
-        }
+        } */
 
         return {
             success: true,
