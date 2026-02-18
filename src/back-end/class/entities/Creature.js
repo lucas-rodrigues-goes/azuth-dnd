@@ -165,16 +165,17 @@ var Creature = class extends Entity {
             target.face_target(this)
         }
 
-        // Grappled
-        if (this.has_condition("Grappled")) {
-            const source = instance(this.get_condition("Grappled").source)
+        // Grappling
+        if (this.has_condition("Grappled") || this.has_condition("Grappling")) {
+            const source = this.has_condition("Grappling") ? this : instance(this.get_condition("Grappled").source)
+            const target = this.has_condition("Grappled") ? this : instance(this.get_condition("Grappling").target)
 
             // Remove grapple if distance is higher than melee
-            if (calculate_distance(this, source) > 1) {
-                this.remove_condition("Grappled")
+            if (calculate_distance(target, source) > 1) {
+                target.remove_condition("Grappled")
 
                 // Remove grappling condition from source, if the condition points to THIS
-                if (source.get_condition("Grappling").target == this.id) source.remove_condition("Grappling")
+                if (source.get_condition("Grappling").target == target.id) source.remove_condition("Grappling")
             }
         }
 
@@ -182,6 +183,13 @@ var Creature = class extends Entity {
         for (const teleporter of mapTeleporters()) {
             if (this.occupiesSameSpace(teleporter)) {
                 teleporter.teleport(this)
+            }
+        }
+
+        // Difficult Terrain
+        for (const dt of mapDifficultTerrain()) {
+            if (this.occupiesSameSpace(dt)) {
+                dt.apply_effect(this)
             }
         }
     }
@@ -193,117 +201,203 @@ var Creature = class extends Entity {
     update_state({daytime=undefined}={}) {
         try {
 
-        // Update Health Bar
-        function crunchNumber(num, from = [0, 100], to = [0, 100]) {
-            // Define the input and output ranges
-            const inputMin = from[0];
-            const inputMax = from[1];
-            const outputMin = to[0];
-            const outputMax = to[1];
-            
-            // Calculate the proportion and map to new range
-            const proportion = (num - inputMin) / (inputMax - inputMin);
-            const crunched = outputMin + proportion * (outputMax - outputMin);
-            
-            return crunched;
-        }
-        const crunchedHealth = crunchNumber(this.health / this.max_health, [0, 1], [0.292, 0.708])
-        const crunchedTempHealth = crunchNumber(this.temporary_health / this.max_health, [0, 1], [0.292, 0.708])
-        const updateBars = (isDead) => {
-            const capitalize = str => str.charAt(0).toUpperCase() + str.slice(1);
-            const healthBars = ["FriendlyHealth", "NeutralHealth", "HostileHealth"]
-            const characterBar = capitalize(this.attitude)+"Health"
+            // Update Health Bar
+            function crunchNumber(num, from = [0, 100], to = [0, 100]) {
+                // Define the input and output ranges
+                const inputMin = from[0];
+                const inputMax = from[1];
+                const outputMin = to[0];
+                const outputMax = to[1];
+                
+                // Calculate the proportion and map to new range
+                const proportion = (num - inputMin) / (inputMax - inputMin);
+                const crunched = outputMin + proportion * (outputMax - outputMin);
+                
+                return crunched;
+            }
+            const crunchedHealth = crunchNumber(this.health / this.max_health, [0, 1], [0.292, 0.708])
+            const crunchedTempHealth = crunchNumber(this.temporary_health / this.max_health, [0, 1], [0.292, 0.708])
+            const updateBars = (isDead) => {
+                const capitalize = str => str.charAt(0).toUpperCase() + str.slice(1);
+                const healthBars = ["FriendlyHealth", "NeutralHealth", "HostileHealth"]
+                const characterBar = capitalize(this.attitude)+"Health"
 
-            if (isDead) {
-                for (const bar of healthBars) {
-                    MTScript.evalMacro(`[r: setBarVisible("${bar}", 0, "${this.id}") ]`)
+                if (isDead) {
+                    for (const bar of healthBars) {
+                        MTScript.evalMacro(`[r: setBarVisible("${bar}", 0, "${this.id}") ]`)
+                    }
+                    MTScript.evalMacro(`[r: setBarVisible("TemporaryHealth", 0, "${this.id}") ]`)
                 }
-                MTScript.evalMacro(`[r: setBarVisible("TemporaryHealth", 0, "${this.id}") ]`)
-            }
-            else {
-                for (const bar of healthBars) {
-                    if (bar != characterBar)
-                    MTScript.evalMacro(`[r: setBarVisible("${bar}", 0, "${this.id}") ]`)
+                else {
+                    for (const bar of healthBars) {
+                        if (bar != characterBar)
+                        MTScript.evalMacro(`[r: setBarVisible("${bar}", 0, "${this.id}") ]`)
+                    }
+                    MTScript.evalMacro(`[r: setBar("${characterBar}", ${crunchedHealth}, "${this.id}")]`)
+                    MTScript.evalMacro(`[r: setBar("TemporaryHealth", ${crunchedTempHealth}, "${this.id}")]`)
                 }
-                MTScript.evalMacro(`[r: setBar("${characterBar}", ${crunchedHealth}, "${this.id}")]`)
-                MTScript.evalMacro(`[r: setBar("TemporaryHealth", ${crunchedTempHealth}, "${this.id}")]`)
             }
+            
+            // Verify all conditions
+            for (const condition in database.conditions.data) {
+                const hasCondition = this.has_condition(condition)
+                switch (condition) {
+                    case "Blinded": {
+                        let DEFAULT_TYPE; {
+                            if (this.has_feature("Truesight")) DEFAULT_TYPE = "Truesight"
+                            else if (this.has_feature("Invocation: Devil's Sight")) DEFAULT_TYPE = "Devil's Sight"
+                            else if (this.has_feature("Superior Darkvision")) DEFAULT_TYPE = "Superior Darkvision"
+                            else if (this.has_feature("Darkvision")) DEFAULT_TYPE = "Darkvision"
+                            else DEFAULT_TYPE = "Normal"
+
+                            const mapVision = daytime || MTScript.evalMacro(`[r:getMapVision()]`)
+                            const day_light = ["day", "dia"].includes(mapVision.toLowerCase())
+                            if (day_light) DEFAULT_TYPE += " Day"
+                        }
+                        this.sight = hasCondition ? "Blinded" : DEFAULT_TYPE
+                        break
+                    }
+                    case "Dead": {
+                        updateBars(hasCondition)
+                        break
+                    }
+                    case "Hidden":
+                        // Falls through
+                    case "Invisible": {
+                        const invis = this.has_condition("Invisible")
+                        const hidden = this.has_condition("Hidden")
+                        this.invisible = this.player ? invis : (invis || hidden)
+
+                        if (invis) this.opacity = 0.2
+                        else if (hidden) this.opacity = 0.5
+                        else this.opacity = 1
+
+                        break
+                    }
+                    case "Unconscious": {
+                        MTScript.evalMacro(`[r: setHasSight(${hasCondition ? 0 : 1}, "${this.id}")]`)
+                        break
+                    }
+                    default: break
+                }
+
+                // State effects
+                const conditions_with_state = [
+                    // Natural
+                    "Dying", "Dead", "Prone", "Sleep", "Web",
+
+                    // Spells
+                    "Blur", "Rage", "Shield", "Hold Person", 
+                    "Hold Monster", "Bless", "Absorb Elements",
+                    "Hex", "Hunter's Mark", "Light",
+                ]
+                if (conditions_with_state.includes(condition)) this.set_state(condition, hasCondition)
+
+                // Light effects
+                const conditions_with_light = ["Light", "Torch", "Candle", "Hooded Lantern"]
+                if (conditions_with_light.includes(condition)) this.set_light(condition, hasCondition)
+
+                // Concentration && Spellcasting
+                if (this.has_conditions(["Incapacitated", "Dead"], "any")) {
+                    this.remove_condition("Concentration")
+                    this.remove_condition("Spellcasting")
+                }
+
+                // Terrain Modifier
+                MTScript.evalMacro(`
+                    [h: setTerrainModifier('{"terrainModifier":1.0,"terrainModifierOperation":"MULTIPLY","terrainModifiersIgnored":["NONE"]}', "${this.id}")]
+                `)
+            }
+
+            // Set grid type
+            macro(`setTokenSnapToGrid(${settings.gridMovement}, "${this.id}")`)
+        } catch (error) { console.log(error) }
+    }
+
+    update_resources(turn_start = false) {
+        // Store current values and maximums BEFORE any changes
+        const previousValues = {
+            "Attack Action": this.get_resource_value("Attack Action"),
+            "Action": this.get_resource_value("Action"),
+            "Bonus Action": this.get_resource_value("Bonus Action"),
+            "Reaction": this.get_resource_value("Reaction"),
+            "Movement": this.get_resource_value("Movement")
+        };
+        
+        const previousMaxes = {
+            "Attack Action": this.get_resource_max("Attack Action"),
+            "Action": this.get_resource_max("Action"),
+            "Bonus Action": this.get_resource_max("Bonus Action"),
+            "Reaction": this.get_resource_max("Reaction"),
+            "Movement": this.get_resource_max("Movement")
+        };
+
+        // Calculate new maximums based on current state
+        let attacks = 1, actions = 1, bonus_actions = 1, reactions = 1, movement = this.speed;
+        
+        // Attacks
+        if (this.has_feature("Three Extra Attacks")) attacks = 4
+        else if (this.has_feature("Two Extra Attacks")) attacks = 3
+        else if (this.has_feature("Extra Attack")) attacks = 2
+
+        // Actions
+        if (this.has_condition("Haste") && !this.has_condition("Slow")) actions = 2
+
+        // Movement modifiers
+        if (this.has_condition("Grappling")) movement = Math.floor(movement * 0.5)
+
+        // Incapacitated modifiers
+        if (this.has_conditions(["Incapacitated", "Unconscious"], "any")) {
+            actions = 0
+            bonus_actions = 0
+            reactions = 0
         }
         
-        // Verify all conditions
-        for (const condition in database.conditions.data) {
-            const hasCondition = this.has_condition(condition)
-            switch (condition) {
-                case "Blinded": {
-                    let DEFAULT_TYPE; {
-                        if (this.has_feature("Truesight")) DEFAULT_TYPE = "Truesight"
-                        else if (this.has_feature("Invocation: Devil's Sight")) DEFAULT_TYPE = "Devil's Sight"
-                        else if (this.has_feature("Superior Darkvision")) DEFAULT_TYPE = "Superior Darkvision"
-                        else if (this.has_feature("Darkvision")) DEFAULT_TYPE = "Darkvision"
-                        else DEFAULT_TYPE = "Normal"
-
-                        const mapVision = daytime || MTScript.evalMacro(`[r:getMapVision()]`)
-                        const day_light = ["day", "dia"].includes(mapVision.toLowerCase())
-                        if (day_light) DEFAULT_TYPE += " Day"
-                    }
-                    this.sight = hasCondition ? "Blinded" : DEFAULT_TYPE
-                    break
-                }
-                case "Dead": {
-                    updateBars(hasCondition)
-                    break
-                }
-                case "Hidden":
-                    // Falls through
-                case "Invisible": {
-                    const invis = this.has_condition("Invisible")
-                    const hidden = this.has_condition("Hidden")
-                    this.invisible = this.player ? invis : (invis || hidden)
-
-                    if (invis) this.opacity = 0.2
-                    else if (hidden) this.opacity = 0.5
-                    else this.opacity = 1
-
-                    break
-                }
-                case "Unconscious": {
-                    MTScript.evalMacro(`[r: setHasSight(${hasCondition ? 0 : 1}, "${this.id}")]`)
-                    break
-                }
-                default: break
-            }
-
-            // State effects
-            const conditions_with_state = [
-                // Natural
-                "Dying", "Dead", "Prone", "Sleep",
-
-                // Spells
-                "Blur", "Rage", "Shield", "Hold Person", 
-                "Hold Monster", "Bless", "Absorb Elements",
-                "Hex", "Hunter's Mark", "Light",
-            ]
-            if (conditions_with_state.includes(condition)) this.set_state(condition, hasCondition)
-
-            // Light effects
-            const conditions_with_light = ["Light", "Torch", "Candle", "Hooded Lantern"]
-            if (conditions_with_light.includes(condition)) this.set_light(condition, hasCondition)
-
-            // Concentration && Spellcasting
-            if (this.has_conditions(["Incapacitated", "Dead"], "any")) {
-                this.remove_condition("Concentration")
-                this.remove_condition("Spellcasting")
-            }
-
-            // Terrain Modifier
-            MTScript.evalMacro(`
-                [h: setTerrainModifier('{"terrainModifier":1.0,"terrainModifierOperation":"MULTIPLY","terrainModifiersIgnored":["NONE"]}', "${this.id}")]
-            `)
+        if (this.has_conditions(["Paralyzed", "Unconscious", "Restrained"], "any")) {
+            movement = 0
         }
 
-        // Set grid type
-        macro(`setTokenSnapToGrid(${settings.gridMovement}, "${this.id}")`)
-        } catch (error) { console.log(error) }
+        // Resource mapping
+        const resourceMapping = {
+            "Attack Action": attacks, 
+            "Action": actions, 
+            "Bonus Action": bonus_actions, 
+            "Reaction": reactions, 
+            "Movement": movement,
+        };
+        
+        // Apply changes with proportional scaling
+        for (const key in resourceMapping) {
+            const newMax = resourceMapping[key];
+            const previousMax = previousMaxes[key];
+            const currentValue = previousValues[key];
+            
+            // Set the new maximum
+            this.set_resource_max(key, newMax);
+            
+            // If maximum changed, scale the current value proportionally
+            if (newMax !== previousMax && previousMax > 0) {
+                // Calculate ratio based on current value relative to previous max
+                const ratio = currentValue / previousMax;
+                
+                // Apply same ratio to new max, rounding up to preserve excess
+                const newValue = Math.ceil(newMax * ratio);
+                
+                this.set_resource_value(key, newValue);
+                
+                console.log(`${key}: ${previousMax}→${newMax}, value: ${currentValue}→${newValue} (ratio: ${ratio})`, "debug");
+            }
+        }
+
+        // Handle turn-based restoration (only setting to max, never capping)
+        if (turn_start) {
+            for (const name in this.#resources) {
+                const resource = this.#resources[name]
+                if (resource?.restored_on === "turn start") {
+                    this.set_resource_value(name, resource.max)
+                }
+            }
+        }
     }
 
     turn_start() {
@@ -311,56 +405,7 @@ var Creature = class extends Entity {
             this.update_state()
             this.maintain_stealth(true)
             this.passive_search()
-
-            // Grappled
-            if (this.has_condition("Grappled")) {
-                const source = instance(this.get_condition("Grappled").source)
-
-                // Remove grapple if distance is higher than melee
-                if (calculate_distance(this, source) > 1) {
-                    this.remove_condition("Grappled")
-
-                    // Remove grappling condition from source, if the condition points to THIS
-                    if (source.get_condition("Grappling").target == this.id) source.remove_condition("Grappling")
-                }
-            }
-        }
-
-        // Max for Combat Resources
-        let attacks = 1, actions = 1, bonus_actions = 1, reactions = 1, movement = this.speed; {
-            // Attacks
-            if (this.has_feature("Three Extra Attacks")) attacks = 4
-            else if (this.has_feature("Two Extra Attacks")) attacks = 3
-            else if (this.has_feature("Extra Attack")) attacks = 2
-
-            // Actions
-            if (this.has_condition("Haste") && !this.has_condition("Slow")) actions = 2
-
-            // Movement
-            if (this.has_condition("Grappling")) movement = Math.floor(movement * 0.5)
-        }
-
-        // If Incapacitated
-        if (this.has_conditions(["Incapacitated", "Unconscious"], "any")) {
-            actions = 0, bonus_actions = 0, reactions = 0
-        }
-        if (this.has_conditions(["Paralyzed", "Unconscious"], "any")) {
-            movement = 0
-        }
-
-        // Set resource maxes on character
-        const resourceMapping = {
-            "Attack Action": attacks, "Action": actions, "Bonus Action": bonus_actions, 
-            "Reaction": reactions, "Movement": movement,
-        }
-        for (const key in resourceMapping) this.set_resource_max(key, resourceMapping[key])
-
-        // Fill resources that recover on "turn start"
-        for (const name in this.#resources) {
-            const resource = this.#resources[name]
-            if (["turn start"].includes(resource.restored_on)) {
-                this.set_resource_value(name, resource.max)
-            }
+            this.update_resources(true)
         }
     }
 
@@ -1781,6 +1826,7 @@ var Creature = class extends Entity {
         }
 
         this.update_state();
+        this.update_resources();
         this.save();
     }
 
@@ -1834,6 +1880,7 @@ var Creature = class extends Entity {
         console.log(`${this.#name} lost the condition ${condition}.`, "debug");
 
         this.update_state();
+        this.update_resources();
         this.save();
     }
 
@@ -1947,7 +1994,8 @@ var Creature = class extends Entity {
             "Incapacitated": ["Paralyzed", "Petrified", "Stunned", "Unconscious"],
             "Paralyzed": ["Hold Person", "Hold Monster"],
             "Unconscious": ["Sleep", "Dead", "Dying"],
-            "Invisible": ["Invisibility", "Greater Invisibility"]
+            "Invisible": ["Invisibility", "Greater Invisibility"],
+            "Restrained": ["Web"],
         };
 
         // Check all equivalent conditions recursively
@@ -2424,16 +2472,24 @@ var Creature = class extends Entity {
             
             macro(`setTokenSnapToGrid(${settings.gridMovement}, getImpersonated())`)
             const distance = 5;
+            this.move(direction, distance/5)
+            let cost = distance
+            for (const dt of mapDifficultTerrain()) {
+                if (this.occupiesSameSpace(dt)) {
+                    cost = distance*2; 
+                    break
+                }
+            }
             
             const isValidMovement = () => {
                 if (!isInCombat) return {success: true}
                 if (!isPlaying) return {success: false, message: `${this.name_color} can't move outside of their turn.`, visibility: "debug"}
 
                 const movement = this.get_resource_value("Movement")
-                if (movement < distance) return {success: false, message: `${this.name_color} does not have enough movement.`, visibility: "debug"}
+                if (movement < cost) return {success: false, message: `${this.name_color} does not have enough movement.`, visibility: "debug"}
                 else {
-                    this.set_resource_value("Movement", movement - distance)
-                    //return {success: true, message: `${this.name_color} moved ${distance}ft.`, visibility: visibility}
+                    this.set_resource_value("Movement", movement - cost)
+                    //return {success: true, message: `${this.name_color} moved ${cost}ft.`, visibility: visibility}
                     return {success: true}
                 }
             }
@@ -2441,11 +2497,13 @@ var Creature = class extends Entity {
             if (validMovement.message) console.log(validMovement.message, validMovement.visibility)
             if (validMovement.success) {
                 this.facing = direction
-                this.move(direction, distance/5)
                 this.onMove()
                 if (settings.cameraAutoMove) this.go_to()
                 macro(`exposeFOW(getCurrentMapName(), getImpersonated())`)
                 macro(`bringToFront("${this.id}")`)
+            }
+            else {
+                this.move(direction, -(distance/5))
             }
         } catch (error) {console.log(error)}
     }
