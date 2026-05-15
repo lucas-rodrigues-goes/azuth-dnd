@@ -95,6 +95,7 @@ var Events = class {
             if (runOnAllClients) return this.runJSfunctionAll({name, type, functionName, args, targets})
 
             const jsonString = JSON.stringify(args)
+            if (macro(`is${type}Visible("${name}")`) == 0) return
             macro(`runJSfunction("${name}", "${type}", "${functionName}", "null", '${jsonString.replace(/'/g, "`")}')`)
         } catch (error) {console.error("Events.runJSfunction()", error + (functionName))} }
 

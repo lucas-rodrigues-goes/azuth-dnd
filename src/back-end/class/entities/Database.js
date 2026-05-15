@@ -1186,6 +1186,7 @@ var Database = class extends Entity {
 
         this.token.setProperty("object", JSON.stringify(object));
         this.token.setProperty("class", JSON.stringify(["Database", "Entity"]));
+        this.token.setProperty("lastModified", Date.now());
     }
 
 

@@ -2514,13 +2514,16 @@ var Creature = class extends Entity {
 
     constructor(id, reset, inherit) {
         super(id)
+        this.#name = this.token.getName();
 
         // Reset validation
         const noObject = String(this.token.getProperty("object")) === "null"
 
-        const needsReset = noObject || reset
-        if (needsReset) {
-            this.#name = this.token.getName();
+        if (noObject) {
+            console.log(this.#name + " failed to load", "debug");
+            throw new Error("Failed to load creature");
+        }
+        else if (reset) {
             console.log(this.#name + " was reset.", "debug");
 
             // Saves if not inheriting, else sends save as return
@@ -2580,6 +2583,8 @@ var Creature = class extends Entity {
         this.token.setName(this.#name);
         this.token.setProperty("object", JSON.stringify(object));
         this.token.setProperty("class", JSON.stringify(["Creature", "Entity"]));
+        this.token.setProperty("lastModified", Date.now());
+        console.log(`${this.name} has been saved.`, "debug")
 
         return object;
     }

@@ -7,59 +7,47 @@
 const instances = {}
 var instance = function (id) {
     if (!id) return
+    
     try {
         const maptool_token = MapTool?.tokens?.getTokenByID(id);
+        const lastModified = maptool_token.getProperty("lastModified") || 0;
+        
+        // Check cache using lastModified timestamp
+        if (instances[id] && instances[id].lastModified === lastModified) {
+            // Cache is still valid
+            return instances[id].instance
+        }
+        
+        // Cache miss or outdated - rebuild
         const token = {
             instance: undefined,
             object: maptool_token.getProperty("object"),
-            classes: maptool_token.getProperty("class")
+            classes: maptool_token.getProperty("class"),
+            lastModified: lastModified  // Store for future comparison
         }
-
+        
         // Validation
         if (token.classes == null || token.classes == "[]") return undefined
-
-        // Cached instance present
-        if (instances[id] != undefined) {
-            const cache_token = instances[id]
-            token.instance = cache_token.instance
+        
+        const parsedClass = JSON.parse(token.classes);
+        if (Array.isArray(parsedClass) && parsedClass.length > 0) {
+            const player_class = eval(parsedClass[0]);
+            if (!player_class) return undefined
             
-            if (JSON.stringify(token) == JSON.stringify(cache_token)) {
-                //console.log(`Successfully loaded token ${token.instance.name}`, "debug")
-            }
-            else {
-                const parsedClass = JSON.parse(token.classes);
-                if (Array.isArray(parsedClass) && parsedClass.length > 0) {
-                    const player_class = eval(parsedClass[0]);
-                    if (!player_class) return undefined
-                    token.instance = new player_class(id);
-                }
-                console.log(`Successfully updated token ${token.instance.name || parsedClass[0]}`, "debug")
-            }
+            token.instance = new player_class(id);
+            instances[id] = token
+            console.log(`${token.instance.name || parsedClass[0]} has been loaded.`, "debug")
+            return token.instance
         }
-
-        // No caching
-        else {
-            const parsedClass = JSON.parse(token.classes);
-            if (Array.isArray(parsedClass) && parsedClass.length > 0) {
-                const player_class = eval(parsedClass[0]);
-                token.instance = new player_class(id);
-            }
-            console.log(`Successfully instanced token ${token.instance.name || parsedClass[0]}`, "debug")
-        }
-
-        // Store
-        instances[id] = token
-
-        // Output
-        return token.instance
-    }
-    catch (error) {
+        
+        return undefined
+        
+    } catch (error) {
         try {
             const maptool_token = MapTool?.tokens?.getTokenByID(id);
             console.log(`Attempt to instance ${maptool_token.getName()} failed: ${error.message}`, "debug");
             return undefined;
-        }
-        catch (innerError) {
+        } catch (innerError) {
             console.log(`Attempt to instance invalid ID (${id}): ${innerError.message}`, "debug");
             return undefined;
         }
