@@ -1995,7 +1995,7 @@ var Creature = class extends Entity {
             "Paralyzed": ["Hold Person", "Hold Monster"],
             "Unconscious": ["Sleep", "Dead", "Dying"],
             "Invisible": ["Invisibility", "Greater Invisibility"],
-            "Restrained": ["Web"],
+            "Restrained": ["Web", "Grappled"],
         };
 
         // Check all equivalent conditions recursively

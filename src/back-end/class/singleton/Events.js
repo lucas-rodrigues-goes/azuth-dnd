@@ -483,6 +483,7 @@ var Events = class {
                     attitude: impersonated()?.attitude || "",
                     health: impersonated()?.health || 10,
                     max_health: impersonated()?.max_health || 10,
+                    temporary_health: impersonated()?.temporary_health || 0,
                 }]
             })
         }
@@ -498,9 +499,9 @@ var Events = class {
                     const creature = instance(tokens[i])
                     if (!creature) continue
                     if (creature.id == getImpersonated()) continue
-                    const {health, max_health, portrait, id, attitude} = creature
+                    const {health, max_health, portrait, temporary_health, id, attitude} = creature
 
-                    ownedCharacters.push({health, max_health, attitude, portrait, id})
+                    ownedCharacters.push({health, max_health, temporary_health, attitude, portrait, id})
                 }
             }
 
@@ -519,7 +520,7 @@ var Events = class {
             const creature = selected()
             if (!creature) return Events.runJSfunction({name: "Target", type: "Overlay", functionName: "updateCurrentTarget", args: [{visible: false}]})
             
-            const {name, type, portrait, attitude, armor_class, health, max_health} = creature
+            const {name, type, portrait, attitude, armor_class, health, max_health, temporary_health} = creature
             const conditions = []
             for (const [name, condition] of Object.entries(creature.conditions)) {
                 const data = database.conditions.data[name]
@@ -558,6 +559,7 @@ var Events = class {
                     armor_class,
                     health,
                     max_health,
+                    temporary_health,
                     conditions
                 }]
             })

@@ -222,6 +222,14 @@
 
             box-shadow: 0vh 0.5vh 1vh rgba(0,0,0,0.15);
         }
+
+        #current-target-temp-health {
+            position: absolute;
+            width: 35vh;
+            
+            height: 1.5vh;
+            background-color: rgba(0,0,0,0);
+        }
     
         #current-target .armor-class {
             position:relative;
@@ -287,7 +295,7 @@
 
         let old_target
         function updateCurrentTarget (args = {}) {
-            const { visible = false, name, type, portrait, attitude, armor_class, health, max_health, conditions } = args
+            const { visible = false, name, type, portrait, attitude, armor_class, health, max_health, temporary_health, conditions } = args
             if (old_target == JSON.stringify(args)) return
             else old_target = JSON.stringify(args)
 
@@ -296,6 +304,7 @@
             if (!visible) return
 
             const hp_percent = health / max_health * 100
+            const temp_health_percent = temporary_health / max_health * 100
             const color = {
                 friendly: "#5ab350",
                 neutral: "#b8a44d",
@@ -306,6 +315,7 @@
             document.getElementById("current-target-name").textContent = name
             document.getElementById("current-target-type").textContent = type
             document.getElementById("current-target-health").style.background = `linear-gradient(90deg, `+color+` `+hp_percent+`%, rgba(0,0,0,0.5) `+hp_percent+`%)`
+            document.getElementById("current-target-temp-health").style.background = `linear-gradient(90deg, `+"rgba(240,240,240,0.8)"+` `+temp_health_percent+`%, rgba(0,0,0,0) `+temp_health_percent+`%)`
 
             // Update portrait
             const target_HUD_portrait = document.getElementById("current-target-portrait")
@@ -378,7 +388,9 @@
                     ]}
                 ]},
                 {tag: "div", attributes: {class: "center-horizontal"}, children: [
-                    {tag: "div", attributes: {id: "current-target-health"}},
+                    {tag: "div", attributes: {id: "current-target-health"}, children: [
+                        {tag: "div", attributes: {id: "current-target-temp-health"}}
+                    ]},
                     {tag: "div", style: {display: "flex", gap: "1vh"}, children: [
                         {tag: "div", attributes: {id: "current-target-armor-class", class: "armor-class"}},
                         {tag: "div", style: {display: "flex", position: "relative", gap: "0.5vh", width: "100%", left: "0.4vh"}, attributes: {id: "current-target-conditions"}}

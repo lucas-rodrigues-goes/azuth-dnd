@@ -166,6 +166,13 @@
             return `linear-gradient(0deg, `+color+` `+hp_percent+`%, rgba(28,28,28,0.6) `+end_hp+`%)`
         }
 
+        function calcTempHealthBackground({temporary_health=0, max_health=0}) {
+            const color = "rgba(255,255,255,0.8)"
+            const hp_percent = temporary_health / max_health * 100
+            const end_hp = hp_percent != 0 ? hp_percent + 2 : 0;
+            return `linear-gradient(0deg, `+color+` `+hp_percent+`%, rgba(28,28,28,0) `+end_hp+`%)`
+        }
+
         //-----------------------------------------------------------------------------------------------------
         // Update Elements
         //-----------------------------------------------------------------------------------------------------
@@ -191,7 +198,7 @@
 
         let old_page;
         function updatePage(args = {}) {
-            const {visible = false, portrait, needsCreate=false, attitude="friendly", health=10, max_health=10} = args
+            const {visible = false, portrait, needsCreate=false, attitude="friendly", health=10, max_health=10, temporary_health=0} = args
 
             if (old_page == JSON.stringify(args)) return
             old_page = JSON.stringify(args)
@@ -202,9 +209,10 @@
 
                 // Portrait, Healthbar
                 const portraitElem = document.getElementById("character-health")
-                document.getElementById("portrait-image").setAttribute("src", portrait || "asset://7117d0983ba2656e84922c2b098acb2c")
                 portraitElem.style.background = calcHealthBackground({attitude, health, max_health})
                 portraitElem.classList[needsCreate ? "add" : "remove"]("hidden")
+                document.getElementById("portrait-image").setAttribute("src", portrait || "asset://7117d0983ba2656e84922c2b098acb2c");
+                document.getElementById("character-temp-health").style.background = calcTempHealthBackground({max_health, temporary_health})
                 
                 // Buttons
                 const buttonsElem = document.getElementById("character-sheet-buttons")
@@ -287,7 +295,7 @@
             ]},)
         }
 
-        function smallCharacterPortrait ({id, portrait="", attitude="friendly", health=10, max_health=10}) {
+        function smallCharacterPortrait ({id, portrait="", attitude="friendly", health=10, max_health=10, temporary_health=0}) {
             // Style
             const style = {
                 padding: 0,
@@ -329,9 +337,14 @@
                 attributes: {class: "circular-bar circular-bar-small"},
                 style: {background: calcHealthBackground({attitude, health, max_health}), boxShadow: "0 0.5vh 1vh rgba(0,0,0,0.3)"},
                 children: [
+                    {tag: "div",
+                        attributes: {class: "circular-bar circular-bar-small"},
+                        style: {background: calcTempHealthBackground({temporary_health, max_health}), border: "none"},
+                    },
+
                     // Impersonated Portrait
                     {tag: "img",
-                        attributes: {id: "portrait-image", src: portrait || "asset://7117d0983ba2656e84922c2b098acb2c" },
+                        attributes: {src: portrait || "asset://7117d0983ba2656e84922c2b098acb2c" },
                         style: style,
                         events: {click: () => portraitClick(id)}
                     },
@@ -414,6 +427,11 @@
                     attributes: {class: "circular-bar hidden", id: "character-health"},
                     style: {background: "rgba(0,0,0,0.15)", boxShadow: "0 0.5vh 1vh rgba(0,0,0,0.3)"},
                     children: [
+                        {tag: "div",
+                            attributes: {id: "character-temp-health", class: "circular-bar"},
+                            style: {background: "rgba(0,0,0,0)"},
+                        },
+
                         // Impersonated Portrait
                         {tag: "img",
                             attributes: {id: "portrait-image", src: ""},
