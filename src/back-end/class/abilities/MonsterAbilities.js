@@ -326,7 +326,7 @@ var MonsterAbilities = class extends Abilities {
             });
             Initiative.suspend_turn(ability.cast_time, "Spellcasting", creature);
             
-            console.log(`${creature.name_color} begins casting ${ability.name}...`, "all");
+            console.log(`${creature.name_color} is preparing to use an ability.`, "all");
             return;
         }
 

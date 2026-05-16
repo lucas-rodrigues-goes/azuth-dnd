@@ -264,6 +264,7 @@ var Initiative = class {
 
         // Logging
         public_log(`${creature.name_color} has started ${description}.`)
+        console.separator();
 
         // Next creature
         this.next_creature()
@@ -321,7 +322,8 @@ var Initiative = class {
         }
 
         // Logging
-        console.log(`${creature.name_color} ended their turn. <br><br><br>`, "all")
+        console.log(`${creature.name_color} ended their turn.`, "all")
+        console.separator()
 
         // Next creature
         this.next_creature()

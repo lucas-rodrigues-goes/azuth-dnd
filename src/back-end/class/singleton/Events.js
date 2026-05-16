@@ -499,7 +499,7 @@ var Events = class {
                     const creature = instance(tokens[i])
                     if (!creature) continue
                     if (creature.id == getImpersonated()) continue
-                    const {health, max_health, portrait, temporary_health, id, attitude} = creature
+                    const {health, max_health, portrait, temporary_health=0, id, attitude} = creature
 
                     ownedCharacters.push({health, max_health, temporary_health, attitude, portrait, id})
                 }

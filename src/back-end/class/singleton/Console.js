@@ -58,14 +58,15 @@ var console = class {
 
     // Creates the log, visibility = "debug" || "gm" || "all"
     static log(text, visibility = "debug") {
-        const message = `${this.#time_hours_minutes()} ${text}`;
+        const skipline = "<br><br>"
+        const message = `${this.#time_hours_minutes()} ${text}${skipline}`;
         const history = this.history;
 
         // MapTool chat
         switch(visibility) {
             // Debug
             case "debug": {
-                if (settings.showDebug) MapTool.chat.broadcastToGM(`<span style="color:rgb(197, 70, 70)">${this.#time_hours_minutes_seconds()} [${player}] ${text}</span>`)
+                if (settings.showDebug) MapTool.chat.broadcastToGM(`<span style="color:rgb(197, 70, 70)">${this.#time_hours_minutes_seconds()} [${player}] ${text} ${skipline}</span>`)
                 break
             }
             // GM
@@ -84,6 +85,10 @@ var console = class {
 
         // Update History
         this.history = history
+    }
+
+    static separator() {
+        MapTool.chat.broadcast("<hr><br>");
     }
 
     static indent(object, visibility) {
