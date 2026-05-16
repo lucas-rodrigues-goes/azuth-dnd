@@ -2559,7 +2559,8 @@ var Creature = class extends Entity {
         this.#attitude = object.attitude || this.#attitude
     }
     
-    save() {
+    save(objectOnly=false) {
+        const cls = ["Creature", "Entity"]
         const object = {
             name: this.#name,
             type: this.#type,
@@ -2580,11 +2581,45 @@ var Creature = class extends Entity {
             attitude: this.#attitude,
         };
     
-        this.token.setName(this.#name);
-        this.token.setProperty("object", JSON.stringify(object));
-        this.token.setProperty("class", JSON.stringify(["Creature", "Entity"]));
-        this.token.setProperty("lastModified", Date.now());
-        console.log(`${this.name} has been saved.`, "debug")
+        if (!objectOnly) {
+            let modified = false;
+
+            // Verify changes
+            const objectChanged = JSON.stringify(object) != this.token.getProperty("object")
+            const requireClassChange = JSON.stringify(cls) != this.token.getProperty("class")
+            const nameChanged = this.token.getName() != this.name
+            
+            if (objectChanged) {
+                const existingObjectString = this.token.getProperty("object") || "null";
+                if (existingObjectString !== "null") {
+                    const oldObject = JSON.parse(existingObjectString);
+                    
+                    for (const key of Object.keys(object)) {
+                        if (JSON.stringify(oldObject[key]) !== JSON.stringify(object[key])) {
+                            console.log(`${this.name} update to ${key}.`, "debug");
+                            break;
+                        }
+                    }
+                } else {
+                    console.log(`${this.name} initialized.`, "debug");
+                }
+
+                this.token.setProperty("object", JSON.stringify(object));
+                modified = true
+            }
+            if (requireClassChange) {
+                console.log(`${this.name} class update.`, "debug")
+                this.token.setProperty("class", JSON.stringify(cls));
+                modified = true
+            }
+            if (nameChanged) {
+                console.log(`${this.name} name update.`, "debug")
+                this.token.setName(this.name);
+                modified = true
+            }
+
+            if (modified == true) this.token.setProperty("lastModified", Date.now());
+        }
 
         return object;
     }

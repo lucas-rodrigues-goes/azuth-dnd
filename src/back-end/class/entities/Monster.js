@@ -389,10 +389,11 @@ var Monster = class extends Creature {
     
         this.token.setProperty("class", JSON.stringify(["Monster", "Creature", "Entity"]));
     }
-    
+
     save() {
+        const cls = ["Monster", "Creature", "Entity"]
         const object = {
-            ...super.save(),
+            ...super.save(true),
             challenge_rating: this.#challenge_rating,
             health_archetype: this.#health_archetype,
             condition_immunities: this.#condition_immunities,
@@ -402,9 +403,43 @@ var Monster = class extends Creature {
             abilities: this.#abilities,
         }
         
-        this.player = false
-        this.token.setProperty("class", JSON.stringify(["Monster", "Creature", "Entity"]));
-        this.token.setProperty("object", JSON.stringify(object));
+        let modified = false;
+
+        // Verify changes
+        const objectChanged = JSON.stringify(object) != this.token.getProperty("object")
+        const requireClassChange = JSON.stringify(cls) != this.token.getProperty("class")
+        const requireNPCFlag = this.player
+        if (objectChanged) {
+            const existingObjectString = this.token.getProperty("object") || "null";
+            if (existingObjectString !== "null") {
+                const oldObject = JSON.parse(existingObjectString);
+                
+                for (const key of Object.keys(object)) {
+                    if (JSON.stringify(oldObject[key]) !== JSON.stringify(object[key])) {
+                        console.log(`${this.name} update to ${key}.`, "debug");
+                        break;
+                    }
+                }
+            } else {
+                console.log(`${this.name} initialized.`, "debug");
+            }
+
+            this.token.setProperty("object", JSON.stringify(object));
+            modified = true
+        }
+        if (requireClassChange) {
+            console.log(`${this.name} class update.`, "debug")
+            this.token.setProperty("class", JSON.stringify(cls));
+            modified = true
+        }
+        if (requireNPCFlag) {
+            console.log(`${this.name} flagged as NPC.`, "debug")
+            this.player = false
+            modified = true
+        }
+
+        // Apply
+        if (modified == true) this.token.setProperty("lastModified", Date.now());
     }
 
     //=====================================================================================================

@@ -261,8 +261,11 @@ var Player = class extends Creature {
             ? !(JSON.parse(this.token.getProperty("class")).includes("Player") || JSON.parse(this.token.getProperty("class")).includes("Humanoid"))
             : true
 
-        const needsReset = noObject || reset || notPlayer
-        if (needsReset) {
+        if (noObject || notPlayer) {
+            console.log(this.name + " failed to load", "debug");
+            throw new Error("Failed to load creature");
+        }
+        else if (reset) {
             this.name = this.token.getName();
             this.type = "Humanoid"
             if (!inherit) this.save()
@@ -287,16 +290,51 @@ var Player = class extends Creature {
     }
     
     save() {
+        const cls = ["Player", "Creature", "Entity"]
         const object = {
-            ...super.save(),
+            ...super.save(true),
             experience: this.experience,
             classes: this.classes,
             exhaustion: this.exhaustion,
         }
         
-        this.player = true
-        this.token.setProperty("class", JSON.stringify(["Player", "Creature", "Entity"]));
-        this.token.setProperty("object", JSON.stringify(object));
+        let modified = false;
+
+        // Verify changes
+        const objectChanged = JSON.stringify(object) != this.token.getProperty("object")
+        const requireClassChange = JSON.stringify(cls) != this.token.getProperty("class")
+        const requirePlayerFlag = !this.player
+        if (objectChanged) {
+            const existingObjectString = this.token.getProperty("object") || "null";
+            if (existingObjectString !== "null") {
+                const oldObject = JSON.parse(existingObjectString);
+                
+                for (const key of Object.keys(object)) {
+                    if (JSON.stringify(oldObject[key]) !== JSON.stringify(object[key])) {
+                        console.log(`${this.name} update to ${key}.`, "debug");
+                        break;
+                    }
+                }
+            } else {
+                console.log(`${this.name} initialized.`, "debug");
+            }
+
+            this.token.setProperty("object", JSON.stringify(object));
+            modified = true
+        }
+        if (requireClassChange) {
+            console.log(`${this.name} class update.`, "debug")
+            this.token.setProperty("class", JSON.stringify(cls));
+            modified = true
+        }
+        if (requirePlayerFlag) {
+            console.log(`${this.name} flagged as player.`, "debug")
+            this.player = true
+            modified = true
+        }
+
+        // Apply
+        if (modified == true) this.token.setProperty("lastModified", Date.now());
     }
 
     //=====================================================================================================
