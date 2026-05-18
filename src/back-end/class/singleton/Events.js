@@ -525,6 +525,8 @@ var Events = class {
             const {name, type, portrait, attitude, armor_class, health, max_health, temporary_health} = creature
             const conditions = []
             for (const [name, condition] of Object.entries(creature.conditions)) {
+                if (!creature.has_condition(name)) continue
+
                 const data = database.conditions.data[name]
                 if (!data) continue
                 const image = data.image

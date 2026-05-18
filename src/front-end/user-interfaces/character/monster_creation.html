@@ -43,7 +43,8 @@
             }
         },
 
-        abilities: {}
+        abilities: {},
+        condition_immunities: []
     }
 
     async function loadMonster() {
@@ -66,7 +67,8 @@
                 spellcasting_level: impersonated().spellcasting_level,
                 spells: impersonated().spells,
                 abilities: impersonated().custom_abilities || {},
-                resistances: impersonated().natural_resistances || {}
+                resistances: impersonated().natural_resistances || {},
+                condition_immunities: impersonated().condition_immunities || []
             })
         } catch { "{}" }`))
         for (const key in impersonated) monster[key] = impersonated[key]
@@ -108,6 +110,15 @@
         return [...new Set(features_array)]
             .map(f => f.trim())
             .filter(f => f !== "")
+            .join(", ");
+    }
+
+    function stringifyConditionImmunities(immunities_array) {
+        if (!Array.isArray(immunities_array) || immunities_array.length === 0)
+            return "";
+        return [...new Set(immunities_array)]
+            .map(i => i.trim())
+            .filter(i => i !== "")
             .join(", ");
     }
 
@@ -368,6 +379,15 @@
             updateProficienciesElem();
             //console.log(monster);
         }};
+        const updateConditionImmunities = {input: function (event) {
+            const immunities = this.value
+                .split(/[ ,]+/)   // split by commas or spaces
+                .map(i => i.trim())
+                .filter(i => i !== "");
+            monster.condition_immunities = [...new Set(immunities)];
+            // Optional: update a UI element if needed, but no extra display required
+            // console.log(monster)
+        }};
 
         // Content
         const containerOptions = {div: {attributes: {class: "hidden"}}, content: {style: {maxHeight: "20vh"}}}
@@ -436,6 +456,11 @@
                     // Proficiencies
                     input({placeholder: `Proficiencies (proficiency:level, proficiency:level)`, options: {
                         input: {attributes: {value: stringifyProficiencies(monster.proficiencies)}, events: updateProficiencies}
+                    }}),
+
+                    // Condition Immunities
+                    input({placeholder: "Condition Immunities (condition, condition)", options: {
+                        input: {attributes: {value: stringifyConditionImmunities(monster.condition_immunities)}, events: updateConditionImmunities}
                     }}),
                 ]}),
 

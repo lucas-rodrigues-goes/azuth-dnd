@@ -1952,6 +1952,8 @@ var Creature = class extends Entity {
         const current_time = Time.current;
         
         for (const [name, condition] of Object.entries(this.conditions)) {
+            if (!this.has_condition(name)) continue
+
             // Handle legacy conditions without end_time
             if (condition.end_time === undefined) {
                 this.#migrate_legacy_condition(name, condition);
@@ -1980,6 +1982,10 @@ var Creature = class extends Entity {
     }
 
     has_condition(name, visited = new Set()) {
+        if (!!this.condition_immunities) {
+            if (this.condition_immunities.includes(name)) return false
+        }
+
         // Prevent infinite loops in case of circular equivalence
         if (visited.has(name)) return false;
         visited.add(name);

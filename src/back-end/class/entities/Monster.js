@@ -38,6 +38,7 @@ var Monster = class extends Creature {
         spells,
 
         abilities,
+        condition_immunities
     }) {
         // Ability Scores
         if (ability_scores) {
@@ -62,6 +63,11 @@ var Monster = class extends Creature {
         this.reset_resistances()
         for (const [resistance, object] of Object.entries(resistances)) {
             this.set_resistance(resistance, object)
+        }
+
+        // Condition Immunities
+        if (condition_immunities) {
+            this.condition_immunities = condition_immunities
         }
 
         // Spells
@@ -192,6 +198,26 @@ var Monster = class extends Creature {
 
         this.#challenge_rating = cr
         this.save()
+    }
+
+    //=====================================================================================================
+    // Conditions
+    //=====================================================================================================
+
+    get condition_immunities () {
+        return [...this.#condition_immunities]
+    }
+
+    set condition_immunities (cond) {
+        this.#condition_immunities = cond
+    }
+
+    add_condition_immunity (name) {
+        if (!this.#condition_immunities.includes(name)) this.#condition_immunities.push(name)
+    }
+
+    remove_condition_immunity (name) {
+        this.#condition_immunities = this.#condition_immunities.filter(a => a != name)
     }
 
     //=====================================================================================================
