@@ -27,9 +27,10 @@ var Sound = class {
     }
 
     static get list() {
-        const tokenNames = macro(` getTokenNames (",", '{"mapName": "Assets"}') `).split(",").sort();
+        const fromAssets = macro(` getTokenNames (",", '{"mapName": "Assets"}') `).split(",").sort();
+        const fromCustomAssets = macro(` getTokenNames (",", '{"mapName": "CustomAssets"}') `).split(",").sort();
         const soundOptions = []
-        for (const token of tokenNames) {
+        for (const token of [...fromAssets, ...fromCustomAssets]) {
             const [type, name] = token.split(":")
             if (type != "stream") continue
             soundOptions.push(capitalize(name, true))
