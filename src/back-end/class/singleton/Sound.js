@@ -26,6 +26,17 @@ var Sound = class {
         this.#data.setProperty("object", JSON.stringify(object));
     }
 
+    static get list() {
+        const tokenNames = macro(` getTokenNames (",", '{"mapName": "Assets"}') `).split(",").sort();
+        const soundOptions = []
+        for (const token of tokenNames) {
+            const [type, name] = token.split(":")
+            if (type != "stream") continue
+            soundOptions.push(capitalize(name, true))
+        }
+        return soundOptions
+    }
+
     //-----------------------------------------------------------------------------------------------------
     // Sound Playing/Stopping Methods
     //-----------------------------------------------------------------------------------------------------

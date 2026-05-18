@@ -235,7 +235,7 @@
                     attributes: {class: "tooltip", tooltip: "Sound Manager"},
                     style: {borderRadius: "2vh", width: "3.5vh", height: "3.5vh", position: "absolute", bottom: "4vh", right: "-0.4vh"},
                     events: {
-                        click: () => backend(`sound_manager()`)
+                        click: () => openClosePage("", "Sound Manager", "sound_manager.html")
                     },
                     children: [
                         {tag: "img", style: {height: "100%", width: "100%"}, attributes: {src: "asset://5bd850a16525cdf0e47ef08f3bb4258d"}}

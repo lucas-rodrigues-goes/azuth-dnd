@@ -1,0 +1,122 @@
+[dialog5("Sound Manager", "width=400; height=800; temporary=0; input=1; noframe=0"), code: {
+	<head>
+		<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+		<link rel="stylesheet" type="text/css" href="style.css@lib:front"></link>
+		<script src="lib://front/macro/style.js?cachelib=false"></script>
+		<script src="lib://front/macro/script.js?cachelib=false"></script>
+		<script src="lib://front/macro/components_new.js?cachelib=false"></script>
+		<script src="lib://front/macro/data_description.js?cachelib=false"></script>
+		[r:'
+	
+		<script>
+
+			const isGM = '+isGM()+' == 1
+
+			//-----------------------------------------------------------------------------------------------------
+			// Helpers
+			//-----------------------------------------------------------------------------------------------------
+
+			//-----------------------------------------------------------------------------------------------------
+			// Update Elements
+			//-----------------------------------------------------------------------------------------------------
+
+			async function updateList () {
+				const filter = document.getElementById("input").value || ""
+				const sound_list = JSON.parse(await backend(`Sound.list`));
+				const currently_streaming = JSON.parse(await backend(`Sound.currently_streaming`))
+				
+				let filtered_list = sound_list;
+				if (filter !== undefined && filter !== "") {
+					filtered_list = sound_list.filter(sound_name => 
+						sound_name.toLowerCase().includes(filter.toLowerCase())
+					);
+				}
+
+				const list_elem = document.getElementById("list");
+				list_elem.clearChildren();
+
+				for (const sound_name of filtered_list) {
+					const playing = currently_streaming.includes(sound_name.toLowerCase())
+					list_elem.appendChild(
+						Song({title: sound_name, playing})
+					)
+				}
+			}
+
+			//-----------------------------------------------------------------------------------------------------
+			// Components
+			//-----------------------------------------------------------------------------------------------------
+
+			function Song ({title="Example", playing=false}={}) {
+				const name = title.toLowerCase()
+				function button_click () {
+					if (playing) {
+						backend(`Sound.stop("`+name+`")`)
+					}
+					else {
+						backend(`Sound.play("`+name+`", {stream: true})`)
+					}
+					updateList()
+				}
+
+				const button_img = playing ? "asset://86aaf403707e0e5289988d67f6adb8af" : "asset://ca3a35626f1849b6872f2ca0704a1a1d"
+				return element(
+					{tag: "div", attributes: {class: "collapsible-div"},
+					style: {
+						display: "flex", gap: "1vh", padding: "1vh",
+					},
+					events: {click: button_click},
+					children: [
+						{tag: "span", style: {fontWeight: "bold", fontSize: "110%"}, text: title},
+						{tag: "img", style: {position: "absolute", fontWeight: "bold", right: "0.5vh", height: "4vh"}, attributes: {src: button_img}}
+					]}
+				)
+			}
+
+			function Body ({ children=[] }={}) {
+				return element({tag: "div", attributes: {id: "body", class: ""}, parent: document.body, children: children})
+			}
+		
+			//-----------------------------------------------------------------------------------------------------
+			// Execution
+			//-----------------------------------------------------------------------------------------------------
+
+			function Page () {
+
+				// Elements
+				Body({children: [
+					{tag: "div", attributes: {class: "outer"}, style: {padding: "0 1vh"}, children: [
+						input({placeholder: "Search", id: "input", options: {input: {
+							events: {
+								change: updateList,
+								input: updateList
+							}
+						}}}),
+						{tag: "div", attributes: {id:"list"}, style: {marginTop: "1vh"}, children: [
+							Song()
+						]}
+					]}
+				]})
+
+			}
+
+			window.onload = function () {
+				try {
+					Page()
+					updateList()
+					setInterval(()=>{updateList()}, 1000)
+				} catch (error) {
+					console.log(error)
+				}
+			}
+		
+			//-----------------------------------------------------------------------------------------------------
+		
+		</script>
+		']
+	</head>
+	
+	<body>
+	</body>
+	
+	}]

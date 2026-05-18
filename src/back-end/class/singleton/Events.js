@@ -75,6 +75,7 @@ var Events = class {
         } catch (error) {console.error("Events.onChangeMap()", error)} }
 
         static onCampaignLoad() { try {
+            Sound.stopAll();
             console.log("Framework Loaded Successfully.", "all")
         } catch (error) {console.error("Events.onCampaignLoad()", error)} }
 
