@@ -615,6 +615,33 @@ var Abilities = class {
             }
             advantage_weight += range_validation.advantage_weight
 
+            // Ammo Validation
+            const hasAmmoWeapon = weapon && weapon.properties.includes("Ammunition")
+            if (hasAmmoWeapon) {
+                // Ammo type
+                let ammo_type = undefined
+                if (weapon.properties.includes("Bow")) {
+                    ammo_type = "Arrow"
+                }
+                else if (weapon.properties.includes("Crossbow")) {
+                    ammo_type = "Bolt"
+                }
+
+                // Has ammo
+                let ammo_amount = 0
+                if (!!creature.equipment.ammunition) {
+                    const ammo_item = database.items.data[creature.equipment.ammunition.name]
+                    if (ammo_item.properties.includes(ammo_type)) ammo_amount = creature.equipment.ammunition.amount
+                }
+
+                if (ammo_amount < 1) {
+                    return {
+                        success: false,
+                        message: `${creature.name_color} tried to attack ${target.name_color} using their ${weapon?.name || "fists"} but they don't have any ${ammo_type.toLowerCase()}s equipped.`
+                    }
+                }
+            }
+
             // Release Sound
             let release_sound = "swing"; {
                 if (!weapon) {}
@@ -674,6 +701,11 @@ var Abilities = class {
 
             // Make stealth tests and others
             this.attack_roll_advantage_modifiers({creature, target})
+
+            // Spend ammunition
+            if (hasAmmoWeapon) {
+                creature.drop_item("ammunition", 1)
+            }
 
             // Output
             return {
@@ -1127,6 +1159,14 @@ var Abilities = class {
                 )
             ) hit_bonus += 2
 
+            // Ammunition
+            if (weapon && weapon.properties.includes("Ammunition")) {
+                if (creature.equipment.ammunition) {
+                    const ammo = database.items.data[creature.equipment.ammunition.name]
+                    if (ammo) hit_bonus += ammo.bonus_hit
+                }
+            }
+
             // Heavy Striking
             if (creature.has_condition("Heavy Striking")) {
                 hit_bonus -= creature?.get_condition("Heavy Striking")?.hit_penalty || 0
@@ -1319,6 +1359,14 @@ var Abilities = class {
                 // Invocation: Lifedrinker
                 if (creature.has_feature("Invocation: Lifedrinker")) {
                     output.push({die_amount: 0, die_size: 0, damage_type: "Necrotic", damage_bonus: Math.max(creature.score_bonus.charisma, 1)})
+                }
+
+                // Ammunition
+                if (weapon && weapon.properties.includes("Ammunition")) {
+                    if (creature.equipment.ammunition) {
+                        const ammo = database.items.data[creature.equipment.ammunition.name]
+                        if (ammo) output.push(...ammo.damage)
+                    }
                 }
 
             }

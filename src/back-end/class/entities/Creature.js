@@ -2270,14 +2270,24 @@ var Creature = class extends Entity {
             return;
         }
     
-        const item_data = database.get_item(from_slot.name);
+        const from_item_data = database.get_item(from_slot.name);
+        const to_item_data = database.get_item(to_slot.name)
         amount = amount ? Math.min(amount, from_slot.amount) : from_slot.amount;
-        const isSameItemType = from_slot.name === to_slot.name;
-        const canStack = isSameItemType && item_data.stackable;
+        const isSameItem = from_slot.name === to_slot.name;
+        const canStack = isSameItem && from_item_data.stackable;
+
+        const isEquippingItemInCombat = (to_container == "equipment") && Initiative?.turn_order.includes(this.id)
+        const swappingAmmo = from_item_data?.type == "ammunition" && to_item_data?.type == "ammunition"
+        const resources = swappingAmmo ? {"Bonus Action": 1} : {Action: 1}
+        if (isEquippingItemInCombat) {
+            if (!Abilities.has_resources_available(resources, this)) {
+                return
+            }
+        }
 
         // Verify target, if target is equipment and item is not valid for slot stop execution
         const isTargetEquipment = !isInventoryIndex(to_index)
-        const isItemValidForSlot = isTargetEquipment ? this.is_valid_item_for_slot(item_data.name, to_index) : true
+        const isItemValidForSlot = isTargetEquipment ? this.is_valid_item_for_slot(from_item_data.name, to_index) : true
         if(!isItemValidForSlot) {
             log ("Invalid item for the selected slot")
             return
@@ -2293,7 +2303,7 @@ var Creature = class extends Entity {
 
                 const isTwoHanded = main_hand_item.properties.includes("Two-handed")
                 const isLight = main_hand_item.properties.includes("Light")
-                const offhandIsWeapon = item_data.subtype == "weapon"
+                const offhandIsWeapon = from_item_data.subtype == "weapon"
 
                 if (isTwoHanded || (!isLight && offhandIsWeapon)) {
                     this.unequip_item(main_hand_index)
@@ -2310,8 +2320,8 @@ var Creature = class extends Entity {
 
             if (off_hand_item) {
 
-                const isTwoHanded = item_data.properties.includes("Two-handed")
-                const isLight = item_data.properties.includes("Light")
+                const isTwoHanded = from_item_data.properties.includes("Two-handed")
+                const isLight = from_item_data.properties.includes("Light")
                 const offhandIsWeapon = off_hand_item.subtype == "weapon"
 
                 if (isTwoHanded || (!isLight && offhandIsWeapon)) {
@@ -2323,7 +2333,7 @@ var Creature = class extends Entity {
 
     
         // Case 1: Swap items (different types or non-stackable)
-        if ((!isSameItemType || !item_data.stackable) && to_slot.name) {
+        if ((!isSameItem || !from_item_data.stackable) && to_slot.name) {
             // Store original values before swap
             const original_from = {...from_slot};
             const original_to = {...to_slot};
@@ -2341,7 +2351,7 @@ var Creature = class extends Entity {
         }
         // Case 3: Stack items
         else if (canStack) {
-            const max_stack = item_data.max_stack || DEFAULT_MAX_STACK;
+            const max_stack = from_item_data.max_stack || DEFAULT_MAX_STACK;
             const available_space = max_stack - to_slot.amount;
             const transfer_amount = Math.min(available_space, amount);
     
@@ -2353,7 +2363,8 @@ var Creature = class extends Entity {
         }
     
         this.save();
-        this.update_state()
+        this.update_state();
+        if (isEquippingItemInCombat) Abilities.use_resources(resources, this)
     }
 
     unequip_item(index) {
@@ -2382,10 +2393,10 @@ var Creature = class extends Entity {
     }
 
     is_valid_item_for_slot(item_name, slot) {
-        const item_data = database.get_item(item_name);
+        const from_item_data = database.get_item(item_name);
         
         // Early return for invalid items
-        if (!item_data?.type) {
+        if (!from_item_data?.type) {
             console.log("Invalid item data for: " + item_name, "debug");
             return false;
         }
@@ -2417,15 +2428,15 @@ var Creature = class extends Entity {
         const { allowed_type, allowed_subtypes } = EQUIPMENT_SLOT_RULES[slot];
         
         // 1. Check primary type match
-        if (item_data.type !== allowed_type) return false;
+        if (from_item_data.type !== allowed_type) return false;
     
         // 2. Check subtype requirements (empty array = any subtype allowed)
-        const subtypeValid = allowed_subtypes.length === 0 ? true : allowed_subtypes.includes(item_data.subtype);
+        const subtypeValid = allowed_subtypes.length === 0 ? true : allowed_subtypes.includes(from_item_data.subtype);
         
         // 3. Check light weapon for offhand slot
         const isOffhandSlot = ["primary off hand", "secondary off hand"].includes(slot)
-        const isWeapon = item_data.subtype == "weapon"
-        const isLight = item_data.properties.includes("Light")
+        const isWeapon = from_item_data.subtype == "weapon"
+        const isLight = from_item_data.properties.includes("Light")
         if (isOffhandSlot && isWeapon && !isLight) {
             return false;
         }

@@ -89,14 +89,17 @@ var data = class {
             max_stack=20,
             properties=[],
 
+            // Ammunition
+            bonus_hit=0,
+
             // Equipment-only
             bonuses={},
             conditions=[],
 
             // Weapon-only
-            damage = [{
-                die_ammount: 1,
-                die_size: 4,
+            damage = [{ // Also ammunition
+                die_amount: 1,
+                die_size: 0,
                 damage_type: "Piercing",
                 damage_bonus: 0,
             }],
@@ -127,8 +130,11 @@ var data = class {
                 switch (type) {
                     // Equipment
                     case "equipment":
-                        object = {...object, bonuses, resistances, conditions}
+                        object = {...object, bonuses, conditions}
                         break
+                    
+                    case "ammunition":
+                        object = {...object, damage, bonus_hit}
                 }
 
                 // Subtype

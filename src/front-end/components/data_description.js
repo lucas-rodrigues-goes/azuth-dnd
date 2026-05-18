@@ -148,7 +148,8 @@ let data_description; {
                         ]
                     },
                     {tag: "div", style: {textAlign: "left"}, children: [
-                        damage ? title_value({title: "Damage", value: damage}) : null,
+                        damage ? title_value({title: item.type == "ammunition" ? "Damage Bonus" : "Damage", value: damage}) : null,
+                        item.bonus_hit ? title_value({title: "Hit Bonus", value: "+" + item.bonus_hit}) : null,
                         item.recovery ? title_value({title: "Recovery Speed", value: String(item.recovery)}) : null,
                         item.base_armor_class ? title_value({title: "Base Armor Class", value: String(item.base_armor_class)}) : null,
                         // Handle legacy bonus_armor_class for backward compatibility

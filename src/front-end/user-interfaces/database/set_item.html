@@ -31,6 +31,9 @@
         properties: [],
         conditions: [],
 
+        // Ammunition only
+        bonus_hit: 0,
+
         // Equipment only
         bonuses: {},
 
@@ -252,7 +255,7 @@
             options: {
                 input: {events: {input: function (event) {
                     item[this.id] = this.value
-                    updateEquipmentVisibility()
+                    updateAdditionalFieldsVisibility()
                 }}}
             }
         });
@@ -281,30 +284,33 @@
                 subtypeDiv.parentElement.classList.add("hidden")
                 item.subtype = ""
             }
-            updateEquipmentVisibility()
+            updateAdditionalFieldsVisibility()
         }
 
-        function updateEquipmentVisibility() {
+        function updateAdditionalFieldsVisibility() {
             const weaponDiv = document.getElementById("weapon-fields")
             const armorDiv = document.getElementById("armor-fields")
             const equipmentDiv = document.getElementById("equipment-fields")
-            
-            if (item.type === "equipment") {
-                equipmentDiv.parentElement.classList.remove("hidden")
-                if (item.subtype === "weapon") {
-                    weaponDiv.parentElement.classList.remove("hidden")
-                    armorDiv.parentElement.classList.add("hidden")
-                } else if (item.subtype === "armor") {
-                    weaponDiv.parentElement.classList.add("hidden") 
-                    armorDiv.parentElement.classList.remove("hidden")
-                } else {
-                    weaponDiv.parentElement.classList.add("hidden")
-                    armorDiv.parentElement.classList.add("hidden")
+            const ammunitionDiv = document.getElementById("ammunition-fields")
+
+            equipmentDiv.parentElement.classList.add("hidden")
+            weaponDiv.parentElement.classList.add("hidden")
+            armorDiv.parentElement.classList.add("hidden")
+            ammunitionDiv.parentElement.classList.add("hidden")
+
+            switch (item.type) {
+                case "equipment": {
+                    equipmentDiv.parentElement.classList.remove("hidden")
+                    if (item.subtype === "weapon") {
+                        weaponDiv.parentElement.classList.remove("hidden")
+                    } else if (item.subtype === "armor") {
+                        armorDiv.parentElement.classList.remove("hidden")
+                    }
+                    break
                 }
-            } else {
-                equipmentDiv.parentElement.classList.add("hidden")
-                weaponDiv.parentElement.classList.add("hidden")
-                armorDiv.parentElement.classList.add("hidden")
+                case "ammunition": {
+                    ammunitionDiv.parentElement.classList.remove("hidden")
+                }
             }
         }
 
@@ -362,7 +368,15 @@
             ]},
 
             {tag: "div", style: {position: "absolute", left: "50%", width: "50%", height: "100%", overflow: "auto"}, children: [
-                // Equipment Fields (conditionally visible)
+                // Additional Fields (conditionally visible)
+                container({id: "ammunition-fields", title: "Ammunition Properties", children: [
+                    input({id: "bonus_hit", placeholder: "Bonus to Hit Bonus", options: {
+                        input: {attributes: {type: "number", value: item.bonus_hit || 0}, events: updateNumberAttribute}
+                    }}),
+                    input({id: "damage", placeholder: "Bonus Damage (1d4 Piercing, 1d4 Fire)", options: {
+                        input: {attributes: {value: formatDamageForInput(item.damage) || ""}, events: updateDamageAttribute}
+                    }}),
+                ]}),
                 container({id: "equipment-fields", title: "Equipment Properties", children: [
                     // Changed from bonus_armor_class to bonuses
                     input({
