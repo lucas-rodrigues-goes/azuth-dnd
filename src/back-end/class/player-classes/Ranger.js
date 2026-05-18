@@ -34,6 +34,13 @@ var Ranger = class extends PlayerClass {
         }
     }
     static get image () { return "asset://90baa66f12545c72476e0cfd3050620f" }
+    static get starting_equipment () { return {
+        "Scale Mail": 1,
+        "Leather Armor": 1,
+        "Shortsword": 2,
+        "Longbow": 1,
+        "Gold Coin": (roll_dice(5,4)) * 10
+    }}
 
     //---------------------------------------------------------------------------------------------------
     // Leveling

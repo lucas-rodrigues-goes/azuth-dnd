@@ -28,6 +28,13 @@ var Fighter = class extends PlayerClass {
     }
     static get healthPerLevel () { return 6 }
     static get image () { return "asset://0775774cade2e68e4a9c4bd5c83ea282" }
+    static get starting_equipment () { return {
+        "Chain Mail": 1,
+        "Longbow": 1,
+        "Longsword": 1,
+        "Shield": 1,
+        "Gold Coin": (roll_dice(5,4)) * 10
+    }}
 
     //---------------------------------------------------------------------------------------------------
     // Leveling

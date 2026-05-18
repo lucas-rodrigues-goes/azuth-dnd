@@ -30,6 +30,20 @@ var Player = class extends Creature {
         // Add class
         if (character_class) { this.level_up(character_class, class_choices) }
 
+        // Add Items
+        const default_items = {
+            "Bedroll": 1,
+            "Tinderbox": 1,
+            "Torch": 5,
+            "Ration": 10,
+            "50ft Hempen Rope": 1,
+            "Common Clothes": 1,
+        }
+        const class_items = character_class ? (eval(character_class)?.starting_equipment || {}) : {}
+        for (const [name, amount] of Object.entries({...default_items, ...class_items})) {
+            this.receive_item(name, amount)
+        }
+
         // Fill Resources
         this.long_rest()
     }

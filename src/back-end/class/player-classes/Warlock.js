@@ -33,6 +33,11 @@ var Warlock = class extends PlayerClass {
         }
     }
     static get image () { return "asset://9663e79e3e5c493352a92ca0ba6acc60" }
+    static get starting_equipment () { return {
+        "Leather Armor": 1,
+        "Dagger": 2,
+        "Gold Coin": (roll_dice(4,4)) * 10
+    }}
 
     //---------------------------------------------------------------------------------------------------
     // Leveling

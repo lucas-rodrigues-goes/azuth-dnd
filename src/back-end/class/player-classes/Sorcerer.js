@@ -31,6 +31,10 @@ var Sorcerer = class extends PlayerClass {
         }
     }
     static get image () { return "asset://57460f85630f7d84602ff9128eccfef4" }
+    static get starting_equipment () { return {
+        "Dagger": 2,
+        "Gold Coin": (roll_dice(3,4)) * 10
+    }}
 
     //---------------------------------------------------------------------------------------------------
     // Leveling

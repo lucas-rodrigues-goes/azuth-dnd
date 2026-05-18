@@ -25,6 +25,12 @@ var Barbarian = class extends PlayerClass {
     }
     static get healthPerLevel () { return 7 }
     static get image () { return "asset://d963c8b40a27e349e6239dcc3a1cbce2" }
+    static get starting_equipment () { return {
+        "Greataxe": 1,
+        "Handaxe": 2,
+        "Javelin": 4,
+        "Gold Coin": (roll_dice(2,4)) * 10
+    }}
 
     //---------------------------------------------------------------------------------------------------
     // Leveling

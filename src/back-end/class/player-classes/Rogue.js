@@ -26,6 +26,14 @@ var Rogue = class extends PlayerClass {
     }
     static get healthPerLevel () { return 5 }
     static get image () { return "asset://e105c25e25210a5e107d49ef0af2bfb5" }
+    static get starting_equipment () { return {
+        "Rapier": 1,
+        "Dagger": 2,
+        "Shortbow": 1,
+        "Leather Armor": 10,
+        "Lockpick": 5,
+        "Gold Coin": (roll_dice(4,4)) * 10
+    }}
 
     //---------------------------------------------------------------------------------------------------
     // Leveling

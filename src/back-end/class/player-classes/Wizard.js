@@ -31,6 +31,13 @@ var Wizard = class extends PlayerClass {
         }
     }
     static get image () { return "asset://feb415509eb88654c71b1fa53d0879f1" }
+    static get starting_equipment () { return {
+        "Staff": 1,
+        "Dagger": 1,
+        "Spellbook": 1,
+        "Blank Scroll": 10,
+        "Gold Coin": (roll_dice(4,4)) * 10
+    }}
 
     //---------------------------------------------------------------------------------------------------
     // Leveling

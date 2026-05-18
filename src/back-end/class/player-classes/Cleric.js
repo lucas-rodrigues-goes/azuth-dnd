@@ -33,6 +33,12 @@ var Cleric = class extends PlayerClass {
         }
     }
     static get image () { return "asset://039a32067cd1c26bf1e18c423a218f5c" }
+    static get starting_equipment () { return {
+        "Mace": 1,
+        "Scale Mail": 1,
+        "Shield": 1,
+        "Gold Coin": (roll_dice(5,4)) * 10
+    }}
 
     //---------------------------------------------------------------------------------------------------
     // Leveling

@@ -26,6 +26,11 @@ var Monk = class extends PlayerClass {
 
     static get healthPerLevel () { return 6 }
     static get image () { return "asset://8047e1c0694233eb11d5a0f669e61a54" }
+    static get starting_equipment () { return {
+        "Quarterstaff": 1,
+        "Shortsword": 1,
+        "Gold Coin": roll_dice(5,4)
+    }}
 
     static get starting_proficiencies () { return ["Strength Saves", "Dexterity Saves"]}
     static get starting_proficiencies_multiclass () { return [] }
