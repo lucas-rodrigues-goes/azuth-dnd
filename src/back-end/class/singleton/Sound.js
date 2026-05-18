@@ -44,9 +44,11 @@ var Sound = class {
 
     static play (name, {volume = 1, stream = false, count = 1} = {}) {
         try {
-            const tokenNames = macro(` getTokenNames (",", '{"mapName": "Assets"}') `).split(",").sort();
+            const fromAssets = macro(` getTokenNames (",", '{"mapName": "Assets"}') `).split(",").sort();
+            const fromCustomAssets = macro(` getTokenNames (",", '{"mapName": "CustomAssets"}') `).split(",").sort();
+
             let foundSound = false
-            for (const token of tokenNames) {
+            for (const token of [...fromAssets, ...fromCustomAssets]) {
                 const [type, currentName] = token.split(":")
                 const desiredType = stream ? "stream" : "clip"
 
