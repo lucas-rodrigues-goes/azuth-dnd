@@ -409,9 +409,11 @@ var Monster = class extends Creature {
         const objectChanged = JSON.stringify(object) != this.token.getProperty("object")
         const requireClassChange = JSON.stringify(cls) != this.token.getProperty("class")
         const requireNPCFlag = this.player
+        const nameChanged = this.token.getName() != this.name
+
         if (objectChanged) {
             const existingObjectString = this.token.getProperty("object") || "null";
-            if (existingObjectString !== "null") {
+            if (existingObjectString !== "null" && Settings.showDebug) {
                 const oldObject = JSON.parse(existingObjectString);
                 
                 for (const key of Object.keys(object)) {
@@ -437,9 +439,16 @@ var Monster = class extends Creature {
             this.player = false
             modified = true
         }
+        if (nameChanged) {
+            console.log(`${this.name} name update.`, "debug")
+            this.token.setName(this.name);
+            modified = true
+        }
 
-        // Apply
-        if (modified == true) this.token.setProperty("lastModified", Date.now());
+        if (modified == true) {
+            if (this.id == impersonated().id) Events.onChangeImpersonatedData();
+            this.token.setProperty("lastModified", Date.now());
+        }
     }
 
     //=====================================================================================================

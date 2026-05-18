@@ -2519,16 +2519,17 @@ var Creature = class extends Entity {
         // Reset validation
         const noObject = String(this.token.getProperty("object")) === "null"
 
-        if (noObject) {
-            console.log(this.#name + " failed to load", "debug");
-            throw new Error("Failed to load creature");
-        }
-        else if (reset) {
+        if (reset) {
             console.log(this.#name + " was reset.", "debug");
 
             // Saves if not inheriting, else sends save as return
             if (!inherit) {this.save()}
-        } else {
+        }
+        else if (noObject) {
+            console.log(this.#name + " failed to load", "debug");
+            throw new Error("Failed to load creature");
+        }
+        else {
             if (!inherit) {this.load()}
         }
     }
@@ -2591,7 +2592,7 @@ var Creature = class extends Entity {
             
             if (objectChanged) {
                 const existingObjectString = this.token.getProperty("object") || "null";
-                if (existingObjectString !== "null") {
+                if (existingObjectString !== "null" && Settings.showDebug) {
                     const oldObject = JSON.parse(existingObjectString);
                     
                     for (const key of Object.keys(object)) {
@@ -2618,7 +2619,10 @@ var Creature = class extends Entity {
                 modified = true
             }
 
-            if (modified == true) this.token.setProperty("lastModified", Date.now());
+            if (modified == true) {
+                if (this.id == impersonated().id) Events.onChangeImpersonatedData();
+                this.token.setProperty("lastModified", Date.now());
+            }
         }
 
         return object;

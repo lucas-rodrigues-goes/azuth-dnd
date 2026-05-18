@@ -20,6 +20,7 @@ var Events = class {
 
         static every5000ms () { try {
             if (isGM && !settings.visionMemory) macro(`exposePCOnlyArea()`)
+            this.updateCharacterSheet()
         } catch (error) {console.error("Events.every5000ms()", error)} }
 
         //=====================================================================================================
@@ -83,7 +84,7 @@ var Events = class {
         } catch (error) {console.error("Events.onInitiativeUpdate()", error)} }
 
         static onTimeAdvancement () { try {
-                this.updateClock()
+            this.updateClock()
         } catch (error) {console.error("Events.onTimeAdvancement()", error)} }
 
         //=====================================================================================================
@@ -95,7 +96,7 @@ var Events = class {
             if (runOnAllClients) return this.runJSfunctionAll({name, type, functionName, args, targets})
 
             const jsonString = JSON.stringify(args)
-            if (macro(`is${type}Visible("${name}")`) == 0) return
+            if (macro(`is${type}Visible("${name}")`) == "0") return
             macro(`runJSfunction("${name}", "${type}", "${functionName}", "null", '${jsonString.replace(/'/g, "`")}')`)
         } catch (error) {console.error("Events.runJSfunction()", error + (functionName))} }
 

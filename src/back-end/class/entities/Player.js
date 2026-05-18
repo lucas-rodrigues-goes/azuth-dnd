@@ -261,15 +261,16 @@ var Player = class extends Creature {
             ? !(JSON.parse(this.token.getProperty("class")).includes("Player") || JSON.parse(this.token.getProperty("class")).includes("Humanoid"))
             : true
 
-        if (noObject || notPlayer) {
-            console.log(this.name + " failed to load", "debug");
-            throw new Error("Failed to load creature");
-        }
-        else if (reset) {
+        if (reset) {
             this.name = this.token.getName();
             this.type = "Humanoid"
             if (!inherit) this.save()
-        } else {
+        }
+        else if (noObject || notPlayer) {
+            console.log(this.name + " failed to load", "debug");
+            throw new Error("Failed to load creature");
+        } 
+        else {
             if (!inherit) this.load()
         }
     }
@@ -304,9 +305,11 @@ var Player = class extends Creature {
         const objectChanged = JSON.stringify(object) != this.token.getProperty("object")
         const requireClassChange = JSON.stringify(cls) != this.token.getProperty("class")
         const requirePlayerFlag = !this.player
+        const nameChanged = this.token.getName() != this.name
+
         if (objectChanged) {
             const existingObjectString = this.token.getProperty("object") || "null";
-            if (existingObjectString !== "null") {
+            if (existingObjectString !== "null" && Settings.showDebug) {
                 const oldObject = JSON.parse(existingObjectString);
                 
                 for (const key of Object.keys(object)) {
@@ -315,7 +318,8 @@ var Player = class extends Creature {
                         break;
                     }
                 }
-            } else {
+            } 
+            else {
                 console.log(`${this.name} initialized.`, "debug");
             }
 
@@ -332,9 +336,16 @@ var Player = class extends Creature {
             this.player = true
             modified = true
         }
+        if (nameChanged) {
+            console.log(`${this.name} name update.`, "debug")
+            this.token.setName(this.name);
+            modified = true
+        }
 
-        // Apply
-        if (modified == true) this.token.setProperty("lastModified", Date.now());
+        if (modified == true) {
+            if (this.id == impersonated().id) Events.onChangeImpersonatedData();
+            this.token.setProperty("lastModified", Date.now());
+        }
     }
 
     //=====================================================================================================
