@@ -58,6 +58,14 @@ var Settings = class {
     }
 
     // Camera Move on Character Movement
+    static #DEFAULT_AUTO_IMPERSONATE_PLAYERS = true
+    static get autoImpersonatePlayers() { return this.#get_obj_key("autoImpersonatePlayers", this.#DEFAULT_AUTO_IMPERSONATE_PLAYERS) }
+    static set autoImpersonatePlayers(value) {
+        if (![true, false].includes(value)) return
+        this.#set_obj_key("autoImpersonatePlayers", value) 
+    }
+
+    // Camera Move on Character Movement
     static #DEFAULT_VISION_MEMORY = true
     static get visionMemory() { return this.#get_obj_key("visionMemory", this.#DEFAULT_VISION_MEMORY) }
     static set visionMemory(value) {

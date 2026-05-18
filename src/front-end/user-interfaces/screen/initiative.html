@@ -161,7 +161,7 @@
 
             backend(`{
                 const currentCreature = instance(Initiative.current_creature);
-                if (!!currentCreature && (currentCreature.owners.includes(player) || isGM)) {
+                if (!!currentCreature && (currentCreature.owners.includes(player) || (isGM && Settings.autoImpersonatePlayers) || (isGM && !currentCreature.player))) {
                     impersonate(currentCreature.id);
                     if (settings.cameraAutoMove) currentCreature.go_to();
                 }
