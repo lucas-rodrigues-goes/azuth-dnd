@@ -134,7 +134,7 @@ var data = class {
                         break
                     
                     case "ammunition":
-                        object = {...object, damage, bonus_hit}
+                        object = {...object, damage, bonus_hit: bonus_hit || 0}
                 }
 
                 // Subtype

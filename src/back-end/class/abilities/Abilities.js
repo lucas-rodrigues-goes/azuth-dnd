@@ -907,9 +907,9 @@ var Abilities = class {
             let count = 0
             for (const damage of damage_list) {
                 // Calculate Damage
-                const die_size = damage.die_size || 0
-                const die_amount = (damage.die_amount || damage.die_ammount || 0) * crit_multiplier
-                const damage_bonus = damage.damage_bonus || 0
+                const die_size = Number(damage.die_size) || 0
+                const die_amount = (Number(damage.die_amount) || Number(damage.die_ammount) || 0) * crit_multiplier
+                const damage_bonus = Number(damage.damage_bonus) || 0
                 const applied_once_damage_modifiers = (count == 0 ? damage_attribute_bonus + damage_modifiers : 0)
 
                 const type = damage.damage_type
@@ -1368,7 +1368,6 @@ var Abilities = class {
                         if (ammo) output.push(...ammo.damage)
                     }
                 }
-
             }
             return output
         } catch (error) {console.error("weapon_attack_damage_bonuses()", error)}

@@ -2277,8 +2277,8 @@ var Creature = class extends Entity {
         const canStack = isSameItem && from_item_data.stackable;
 
         const isEquippingItemInCombat = (to_container == "equipment") && Initiative?.turn_order.includes(this.id)
-        const swappingAmmo = from_item_data?.type == "ammunition" && to_item_data?.type == "ammunition"
-        const resources = swappingAmmo ? {"Bonus Action": 1} : {Action: 1}
+        const isAmmo = from_item_data?.type == "ammunition"
+        const resources = isAmmo ? {"Bonus Action": 1} : {Action: 1}
         if (isEquippingItemInCombat) {
             if (!Abilities.has_resources_available(resources, this)) {
                 return
