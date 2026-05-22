@@ -220,7 +220,7 @@ var Spells = class extends Abilities {
                 if (hasRegularSlot && hasPactSlot) {
                     // Both available - ask user which to use
                     const slotChoice = input({slot_type: {
-                        label: "Damage Type",
+                        label: "Spell Slot",
                         value: `${regularSpellSlot},Pact Slot`,
                         type: "radio",
                         options: {value: "string"}

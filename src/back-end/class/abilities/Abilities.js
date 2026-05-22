@@ -178,8 +178,9 @@ var Abilities = class {
             const normalized = this.normalize_resources(resources)
             const isSpell = normalized.some(r => r.name.includes("Spell Slot"))
 
+            const creat_resources = {...creature.resources}
             for (const { name, amount } of normalized) {
-                const resource = creature.resources[name];
+                const resource = creat_resources[name];
 
                 // Conditions
                 const isTurnResource = ["Action", "Attack Action", "Bonus Action", "Reaction", "Movement"].includes(name);
@@ -225,8 +226,11 @@ var Abilities = class {
                     continue;
                 }
 
-                creature.set_resource_value(name, resource.value - amount);
+                const newValue = resource.value - amount
+                creat_resources[name].value = newValue
             }
+
+            creature.resources = creat_resources
         } catch (error) {
             console.error("use_resources()", error)
         }
@@ -640,6 +644,16 @@ var Abilities = class {
                         message: `${creature.name_color} tried to attack ${target.name_color} using their ${weapon?.name || "fists"} but they don't have any ${ammo_type.toLowerCase()}s equipped.`
                     }
                 }
+            }
+
+            // Loading
+            const hasLoading = weapon && weapon.properties.includes("Loading")
+            if (hasLoading) {
+                if (creature.has_condition("Loading")) return {
+                    success: false,
+                    message: `${creature.name_color} tried to attack ${target.name_color} using their ${weapon?.name || "fists"} but the weapon requires to be reloaded.`
+                } 
+                else creature.set_condition("Loading", 1);
             }
 
             // Release Sound

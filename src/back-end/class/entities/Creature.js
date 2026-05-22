@@ -406,6 +406,7 @@ var Creature = class extends Entity {
             this.maintain_stealth(true)
             this.passive_search()
             this.update_resources(true)
+            this.remove_condition("Loading")
         }
     }
 
@@ -1345,6 +1346,11 @@ var Creature = class extends Entity {
     //=====================================================================================================
 
     get resources() {return this.#resources}
+
+    set resources(resources) {
+        this.#resources = resources
+        this.save();
+    }
 
     set_resource(resource, max, restored_on, value=0) {
         this.#resources[resource] = {
