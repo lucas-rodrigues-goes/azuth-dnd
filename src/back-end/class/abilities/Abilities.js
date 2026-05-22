@@ -616,7 +616,7 @@ var Abilities = class {
             advantage_weight += range_validation.advantage_weight
 
             // Ammo Validation
-            const hasAmmoWeapon = weapon && weapon.properties.includes("Ammunition")
+            const hasAmmoWeapon = weapon && weapon.properties.includes("Ammunition") && creature.player
             if (hasAmmoWeapon) {
                 // Ammo type
                 let ammo_type = undefined
